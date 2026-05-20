@@ -21,7 +21,7 @@ public class SubscriptionResponse {
 
     private TierType currentTier;
 
-    private SubscriptionStatus subscriptionStatus;
+    private SubscriptionStatus status;
 
     private LocalDateTime startDate;
 
