@@ -160,3 +160,4 @@ CREATE TABLE subscription_history (
 
 
 CREATE UNIQUE INDEX uq_active_subscription_per_user ON subscriptions(user_id) WHERE status = 'ACTIVE';
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
