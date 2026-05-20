@@ -11,15 +11,15 @@ import lombok.Setter;
 @Setter
 public class CreateSubscriptionRequest {
 
-    @Email
-    @NotBlank
+    @Email(message = "email must be a valid email address")
+    @NotBlank(message = "email must not be blank")
     private String email;
 
-    @NotBlank
+    @NotBlank(message = "fullName must not be blank")
     private String fullName;
 
     private String cohort;
 
-    @NotNull
+    @NotNull(message = "planType is required")
     private PlanType planType;
 }
