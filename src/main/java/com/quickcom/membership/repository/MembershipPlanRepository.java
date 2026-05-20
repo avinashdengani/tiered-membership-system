@@ -8,11 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface MembershipPlanRepository
-        extends JpaRepository<MembershipPlan, UUID> {
+public interface MembershipPlanRepository extends JpaRepository<MembershipPlan, UUID> {
 
-    Optional<MembershipPlan> findByPlanTypeAndActiveTrue(
-            PlanType planType
-    );
-
+    Optional<MembershipPlan> findByPlanTypeAndActiveTrue(PlanType planType);
 }

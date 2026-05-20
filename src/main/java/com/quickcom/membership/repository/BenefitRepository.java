@@ -9,12 +9,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface BenefitRepository
-        extends JpaRepository<Benefit, UUID> {
+public interface BenefitRepository extends JpaRepository<Benefit, UUID> {
 
-    Optional<Benefit> findByBenefitTypeAndActiveTrue(
-            BenefitType benefitType
-    );
+    Optional<Benefit> findByBenefitTypeAndActiveTrue(BenefitType benefitType);
 
     List<Benefit> findAllByActiveTrue();
 }

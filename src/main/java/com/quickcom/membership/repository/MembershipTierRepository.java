@@ -9,12 +9,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface MembershipTierRepository
-        extends JpaRepository<MembershipTier, UUID> {
+public interface MembershipTierRepository extends JpaRepository<MembershipTier, UUID> {
 
-    Optional<MembershipTier> findByTierTypeAndActiveTrue(
-            TierType tierType
-    );
+    Optional<MembershipTier> findByTierTypeAndActiveTrue(TierType tierType);
 
     List<MembershipTier> findAllByActiveTrueOrderByPriorityAsc();
 }
