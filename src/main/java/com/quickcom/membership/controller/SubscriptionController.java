@@ -3,14 +3,14 @@ package com.quickcom.membership.controller;
 import com.quickcom.membership.dto.request.CreateSubscriptionRequest;
 import com.quickcom.membership.dto.response.SubscriptionResponse;
 import com.quickcom.membership.service.SubscriptionService;
+import com.quickcom.membership.service.TierEvaluationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/subscriptions")
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
+    private final TierEvaluationService tierEvaluationService;
 
     @PostMapping
     public ResponseEntity<SubscriptionResponse> createSubscription(
@@ -30,5 +31,15 @@ public class SubscriptionController {
                 .status(HttpStatus.CREATED)
                 .body(response);
 
+    }
+
+    @PostMapping("/{subscriptionId}/evaluate-tier")
+    public ResponseEntity<String> evaluateTier(
+            @PathVariable UUID subscriptionId
+    ) {
+
+        tierEvaluationService.evaluateTier(subscriptionId);
+
+        return ResponseEntity.ok("Tier evaluation completed successfully");
     }
 }

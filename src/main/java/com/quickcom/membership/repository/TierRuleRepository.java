@@ -10,6 +10,6 @@ import java.util.UUID;
 
 public interface TierRuleRepository extends JpaRepository<TierRule, UUID> {
 
-    List<TierRule> findAllByTierAndActiveTrue(MembershipTier tier);
+    List<TierRule> findAllByMembershipTierAndActiveTrue(MembershipTier membershipTier);
     List<TierRule> findByActiveTrue();
 }
