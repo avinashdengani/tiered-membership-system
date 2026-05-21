@@ -12,17 +12,13 @@ public class OperatorEvaluationService {
 
     private final List<OperatorEvaluator> operatorEvaluators;
 
-    public boolean evaluate(
-            OperatorType operatorType,
-            Comparable actualValue,
-            Comparable expectedValue
-    ) {
+    public boolean evaluate(OperatorType operatorType, Comparable actualValue, Comparable expectedValue) {
         OperatorEvaluator operatorEvaluator =
                 operatorEvaluators.stream()
                                 .filter(evaluator -> evaluator.getSupportedOperator() == operatorType)
                                 .findFirst()
                                 .orElseThrow(() ->
-                                        new IllegalArgumentException("Unsupported operator type")
+                                     new IllegalArgumentException("Unsupported operator type")
                                 );
 
         return operatorEvaluator.evaluate(actualValue, expectedValue);

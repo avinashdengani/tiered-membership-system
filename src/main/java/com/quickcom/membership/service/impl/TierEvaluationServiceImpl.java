@@ -37,9 +37,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
         updateSubscriptionTier(subscription, highestEligibleTier);
     }
 
-    private Subscription getSubscription(
-            UUID subscriptionId
-    ) {
+    private Subscription getSubscription(UUID subscriptionId) {
 
         return subscriptionRepository.findById(
                 subscriptionId
@@ -55,10 +53,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
         return tierRuleRepository.findByActiveTrue();
     }
 
-    private Map<MembershipTier, List<TierRule>>
-    groupRulesByTier(
-            List<TierRule> tierRules
-    ) {
+    private Map<MembershipTier, List<TierRule>> groupRulesByTier(List<TierRule> tierRules) {
 
         return tierRules.stream()
                 .collect(Collectors.groupingBy(
@@ -66,30 +61,17 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
                 ));
     }
 
-    private MembershipTier determineHighestEligibleTier(
-            Subscription subscription,
-            Map<MembershipTier, List<TierRule>> tierRulesMap
-    ) {
+    private MembershipTier determineHighestEligibleTier(Subscription subscription, Map<MembershipTier, List<TierRule>> tierRulesMap) {
 
-        MembershipTier highestEligibleTier =
-                subscription.getCurrentTier();
+        MembershipTier highestEligibleTier = subscription.getCurrentTier();
 
-        for (Map.Entry<MembershipTier, List<TierRule>> entry
-                : tierRulesMap.entrySet()) {
+        for (Map.Entry<MembershipTier, List<TierRule>> entry : tierRulesMap.entrySet()) {
 
-            MembershipTier membershipTier =
-                    entry.getKey();
+            MembershipTier membershipTier = entry.getKey();
 
-            List<TierRule> tierRules =
-                    entry.getValue();
+            List<TierRule> tierRules = entry.getValue();
 
-            boolean eligible =
-                    areAllRulesEligible(
-                            subscription,
-                            tierRules
-                    );
-
-            if (eligible &&
+            if (areAllRulesEligible(subscription, tierRules) &&
                     membershipTier.getPriority() >
                             highestEligibleTier.getPriority()) {
 
@@ -100,10 +82,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
         return highestEligibleTier;
     }
 
-    private boolean areAllRulesEligible(
-            Subscription subscription,
-            List<TierRule> tierRules
-    ) {
+    private boolean areAllRulesEligible(Subscription subscription, List<TierRule> tierRules) {
 
         return tierRules.stream()
                 .allMatch(rule ->
@@ -113,15 +92,11 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
 
     private boolean evaluateRule(Subscription subscription, TierRule rule) {
 
-        TierRuleEvaluator tierRuleEvaluator =
-                getRuleEvaluator(rule);
-
+        TierRuleEvaluator tierRuleEvaluator = getRuleEvaluator(rule);
         return tierRuleEvaluator.evaluate(subscription, rule);
     }
 
-    private TierRuleEvaluator getRuleEvaluator(
-            TierRule rule
-    ) {
+    private TierRuleEvaluator getRuleEvaluator(TierRule rule) {
 
         return tierRuleEvaluators.stream()
                 .filter(evaluator ->
@@ -129,16 +104,11 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
                 )
                 .findFirst()
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Unsupported rule type"
-                        )
+                    new IllegalArgumentException("Unsupported rule type")
                 );
     }
 
-    private void updateSubscriptionTier(
-            Subscription subscription,
-            MembershipTier membershipTier
-    ) {
+    private void updateSubscriptionTier(Subscription subscription, MembershipTier membershipTier) {
 
         subscription.setCurrentTier(membershipTier);
         subscriptionRepository.save(subscription);

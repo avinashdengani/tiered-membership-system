@@ -1,7 +1,9 @@
 package com.quickcom.membership.rule.operator;
 
 import com.quickcom.membership.domain.enums.OperatorType;
+import org.springframework.stereotype.Component;
 
+@Component
 public class EqualsOperatorEvaluator implements OperatorEvaluator{
     @Override
     public OperatorType getSupportedOperator() {
