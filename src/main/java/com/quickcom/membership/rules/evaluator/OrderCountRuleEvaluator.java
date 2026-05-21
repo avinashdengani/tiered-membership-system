@@ -16,6 +16,6 @@ public class OrderCountRuleEvaluator implements TierRuleEvaluator{
     @Override
     public boolean evaluate(Subscription subscription, TierRule tierRule) {
         int currentOrderCount = 15;
-        return (currentOrderCount >= Integer.parseInt(tierRule.getThresholdValue()));
+        return (currentOrderCount >= Integer.parseInt(tierRule.getRuleValue()));
     }
 }

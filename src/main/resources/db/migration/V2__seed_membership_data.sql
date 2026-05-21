@@ -119,3 +119,87 @@ VALUES
         now(),
         now()
     );
+
+
+
+INSERT INTO tier_rules (
+    id,
+    tier_id,
+    rule_type,
+    operator_type,
+    rule_value,
+    active,
+    created_at,
+    updated_at
+)
+VALUES
+    (
+        gen_random_uuid(),
+        (
+            SELECT id
+            FROM membership_tiers
+            WHERE tier_type = 'GOLD'
+        ),
+        'ORDER_COUNT',
+        'GREATER_THAN_EQUAL',
+        '10',
+        true,
+        now(),
+        now()
+    ),
+    (
+        gen_random_uuid(),
+        (
+            SELECT id
+            FROM membership_tiers
+            WHERE tier_type = 'GOLD'
+        ),
+        'MONTHLY_SPEND',
+        'GREATER_THAN_EQUAL',
+        '5000',
+        true,
+        now(),
+        now()
+    ),
+    (
+        gen_random_uuid(),
+        (
+            SELECT id
+            FROM membership_tiers
+            WHERE tier_type = 'PLATINUM'
+        ),
+        'ORDER_COUNT',
+        'GREATER_THAN_EQUAL',
+        '25',
+        true,
+        now(),
+        now()
+    ),
+    (
+        gen_random_uuid(),
+        (
+            SELECT id
+            FROM membership_tiers
+            WHERE tier_type = 'PLATINUM'
+        ),
+        'MONTHLY_SPEND',
+        'GREATER_THAN_EQUAL',
+        '15000',
+        true,
+        now(),
+        now()
+    ),
+    (
+        gen_random_uuid(),
+        (
+            SELECT id
+            FROM membership_tiers
+            WHERE tier_type = 'PLATINUM'
+        ),
+        'COHORT',
+        'EQUALS',
+        'PREMIUM_USERS',
+        true,
+        now(),
+        now()
+    );

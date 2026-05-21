@@ -102,7 +102,7 @@ CREATE TABLE tier_rules (
 
     operator_type VARCHAR(50) NOT NULL,
 
-    threshold_value VARCHAR(255) NOT NULL,
+    rule_value VARCHAR(255) NOT NULL,
 
     active BOOLEAN NOT NULL,
 

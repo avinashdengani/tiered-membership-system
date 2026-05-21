@@ -17,6 +17,6 @@ public class MonthlySpendRuleEvaluator implements TierRuleEvaluator{
 
         BigDecimal monthlySpend = BigDecimal.valueOf(12000);
 
-        return monthlySpend.compareTo(new BigDecimal(tierRule.getThresholdValue())) >= 0;
+        return monthlySpend.compareTo(new BigDecimal(tierRule.getRuleValue())) >= 0;
     }
 }

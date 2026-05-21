@@ -15,7 +15,6 @@ public class CohortRuleEvaluator implements TierRuleEvaluator{
         String cohort =
                 subscription.getUser()
                         .getCohort();
-        //TODO: ADD RULE VALUE
-        return cohort != null && cohort.equalsIgnoreCase("");
+        return cohort != null && cohort.equalsIgnoreCase(tierRule.getRuleValue());
     }
 }

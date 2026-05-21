@@ -25,8 +25,8 @@ public class TierRule extends BaseEntity{
     private OperatorType operatorType;
 
     @Column(nullable = false)
-    private String thresholdValue;
+    private Boolean active = true;
 
     @Column(nullable = false)
-    private Boolean active = true;
+    private String ruleValue;
 }
