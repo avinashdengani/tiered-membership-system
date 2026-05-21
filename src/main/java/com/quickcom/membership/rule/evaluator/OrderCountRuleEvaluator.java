@@ -1,22 +1,21 @@
-package com.quickcom.membership.rules.evaluator;
+package com.quickcom.membership.rule.evaluator;
 
 import com.quickcom.membership.domain.entity.Subscription;
 import com.quickcom.membership.domain.entity.TierRule;
 import com.quickcom.membership.domain.enums.RuleType;
+import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
+@Component
+public class OrderCountRuleEvaluator implements TierRuleEvaluator{
 
-public class MonthlySpendRuleEvaluator implements TierRuleEvaluator{
     @Override
     public RuleType getSupportedRuleType() {
-        return RuleType.MONTHLY_SPEND;
+        return RuleType.ORDER_COUNT;
     }
 
     @Override
     public boolean evaluate(Subscription subscription, TierRule tierRule) {
-
-        BigDecimal monthlySpend = BigDecimal.valueOf(12000);
-
-        return monthlySpend.compareTo(new BigDecimal(tierRule.getRuleValue())) >= 0;
+        int currentOrderCount = 15;
+        return (currentOrderCount >= Integer.parseInt(tierRule.getRuleValue()));
     }
 }

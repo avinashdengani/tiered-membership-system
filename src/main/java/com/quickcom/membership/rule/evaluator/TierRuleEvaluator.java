@@ -1,4 +1,4 @@
-package com.quickcom.membership.rules.evaluator;
+package com.quickcom.membership.rule.evaluator;
 
 import com.quickcom.membership.domain.entity.Subscription;
 import com.quickcom.membership.domain.entity.TierRule;
