@@ -3,6 +3,7 @@ package com.quickcom.membership.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -102,5 +103,23 @@ public class GlobalExceptionHandler {
                 .message(message)
                 .path(path)
                 .build();
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiErrorResponse> handleOptimisticLockException(
+            ObjectOptimisticLockingFailureException exception,
+            HttpServletRequest request
+    ) {
+
+        ApiErrorResponse response =
+                buildErrorResponse(
+                        HttpStatus.CONFLICT,
+                        "Concurrent update detected. Please retry.",
+                        request.getRequestURI()
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(response);
     }
 }

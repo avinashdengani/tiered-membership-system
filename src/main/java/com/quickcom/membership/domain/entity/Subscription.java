@@ -35,8 +35,4 @@ public class Subscription extends BaseEntity{
     @Column(nullable = false)
     private LocalDateTime expiryDate;
 
-    @Version
-    @Column(nullable = false)
-    private Long version;
-
 }
