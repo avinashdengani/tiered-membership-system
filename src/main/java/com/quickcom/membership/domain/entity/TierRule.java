@@ -14,7 +14,7 @@ public class TierRule extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tier_id", nullable = false)
-    private MembershipTier tier;
+    private MembershipTier membershipTier;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
