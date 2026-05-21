@@ -34,12 +34,12 @@ public class SubscriptionController {
     }
 
     @PostMapping("/{subscriptionId}/evaluate-tier")
-    public ResponseEntity<String> evaluateTier(
+    public ResponseEntity<SubscriptionResponse> evaluateTier(
             @PathVariable UUID subscriptionId
     ) {
 
-        tierEvaluationService.evaluateTier(subscriptionId);
+        SubscriptionResponse response = tierEvaluationService.evaluateTier(subscriptionId);
 
-        return ResponseEntity.ok("Tier evaluation completed successfully");
+        return ResponseEntity.ok(tierEvaluationService.evaluateTier(subscriptionId));
     }
 }

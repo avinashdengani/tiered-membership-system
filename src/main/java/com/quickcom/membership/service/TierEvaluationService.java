@@ -1,7 +1,9 @@
 package com.quickcom.membership.service;
 
+import com.quickcom.membership.dto.response.SubscriptionResponse;
+
 import java.util.UUID;
 
 public interface TierEvaluationService {
-    void evaluateTier(UUID subscriptionId);
+    SubscriptionResponse evaluateTier(UUID subscriptionId);
 }

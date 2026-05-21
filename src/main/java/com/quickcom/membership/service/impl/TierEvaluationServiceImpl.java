@@ -3,6 +3,8 @@ package com.quickcom.membership.service.impl;
 import com.quickcom.membership.domain.entity.MembershipTier;
 import com.quickcom.membership.domain.entity.Subscription;
 import com.quickcom.membership.domain.entity.TierRule;
+import com.quickcom.membership.dto.response.SubscriptionResponse;
+import com.quickcom.membership.mapper.SubscriptionMapper;
 import com.quickcom.membership.repository.SubscriptionRepository;
 import com.quickcom.membership.repository.TierRuleRepository;
 import com.quickcom.membership.rule.evaluator.TierRuleEvaluator;
@@ -22,9 +24,9 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
     private final SubscriptionRepository subscriptionRepository;
     private final TierRuleRepository tierRuleRepository;
     private final List<TierRuleEvaluator> tierRuleEvaluators;
-
+    private final SubscriptionMapper subscriptionMapper;
     @Override
-    public void evaluateTier(UUID subscriptionId) {
+    public SubscriptionResponse evaluateTier(UUID subscriptionId) {
 
         Subscription subscription = getSubscription(subscriptionId);
 
@@ -35,6 +37,8 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
         MembershipTier highestEligibleTier =  determineHighestEligibleTier(subscription, tierRulesMap);
 
         updateSubscriptionTier(subscription, highestEligibleTier);
+
+        return subscriptionMapper.mapToResponse(subscription);
     }
 
     private Subscription getSubscription(UUID subscriptionId) {
