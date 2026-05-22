@@ -40,6 +40,6 @@ public class SubscriptionController {
 
         SubscriptionResponse response = tierEvaluationService.evaluateTier(subscriptionId);
 
-        return ResponseEntity.ok(tierEvaluationService.evaluateTier(subscriptionId));
+        return ResponseEntity.ok(response);
     }
 }
