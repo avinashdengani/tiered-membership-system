@@ -45,7 +45,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
 
         MembershipTier evaluatedTier = determineEligibleTier(subscription, tierRulesMap);
 
-        if (currentTier.equals(evaluatedTier)) {
+        if (currentTier.getId().equals(evaluatedTier.getId())) {
             return subscriptionMapper.mapToResponse(subscription);
         }
 
