@@ -5,6 +5,7 @@ import com.quickcom.membership.domain.entity.MembershipTier;
 import com.quickcom.membership.domain.entity.Subscription;
 import com.quickcom.membership.domain.entity.User;
 
+import com.quickcom.membership.domain.enums.SubscriptionActionType;
 import com.quickcom.membership.domain.enums.SubscriptionStatus;
 import com.quickcom.membership.domain.enums.TierType;
 
@@ -17,6 +18,7 @@ import com.quickcom.membership.repository.MembershipTierRepository;
 import com.quickcom.membership.repository.SubscriptionRepository;
 import com.quickcom.membership.repository.UserRepository;
 
+import com.quickcom.membership.service.SubscriptionHistoryService;
 import com.quickcom.membership.service.SubscriptionService;
 
 import jakarta.transaction.Transactional;
@@ -36,6 +38,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private final MembershipTierRepository membershipTierRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionMapper subscriptionMapper;
+    private final SubscriptionHistoryService subscriptionHistoryService;
 
     @Override
     @Transactional
@@ -51,15 +54,19 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         MembershipTier defaultTier = getDefaultTier();
 
-        Subscription subscription =
-                buildSubscription(
-                        user,
-                        membershipPlan,
-                        defaultTier
-                );
+        Subscription subscription = buildSubscription(user, membershipPlan, defaultTier);
 
+        subscriptionRepository.save(subscription);
 
-        return subscriptionMapper.mapToResponse(subscriptionRepository.save(subscription));
+        subscriptionHistoryService.recordTierHistory(
+                subscription,
+                SubscriptionActionType.SUBSCRIBED,
+                null,
+                defaultTier.getTierType().name(),
+                SubscriptionActionType.SUBSCRIBED.getDefaultReason()
+        );
+
+        return subscriptionMapper.mapToResponse(subscription);
     }
 
     private User findOrCreateUser(
@@ -117,12 +124,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private MembershipTier getDefaultTier() {
 
         return membershipTierRepository
-                .findByTierTypeAndActiveTrue(
-                        TierType.SILVER
-                )
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Default tier not configured"
-                ));
+            .findByDefaultTierTrueAndActiveTrue()
+            .orElseThrow(() -> new IllegalArgumentException(
+                    "Default tier not configured"
+            ));
     }
 
     private Subscription buildSubscription(

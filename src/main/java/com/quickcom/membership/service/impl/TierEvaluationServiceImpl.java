@@ -3,12 +3,16 @@ package com.quickcom.membership.service.impl;
 import com.quickcom.membership.domain.entity.MembershipTier;
 import com.quickcom.membership.domain.entity.Subscription;
 import com.quickcom.membership.domain.entity.TierRule;
+import com.quickcom.membership.domain.enums.SubscriptionActionType;
 import com.quickcom.membership.dto.response.SubscriptionResponse;
 import com.quickcom.membership.mapper.SubscriptionMapper;
+import com.quickcom.membership.repository.MembershipTierRepository;
 import com.quickcom.membership.repository.SubscriptionRepository;
 import com.quickcom.membership.repository.TierRuleRepository;
 import com.quickcom.membership.rule.evaluator.TierRuleEvaluator;
+import com.quickcom.membership.service.SubscriptionHistoryService;
 import com.quickcom.membership.service.TierEvaluationService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,18 +29,27 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
     private final TierRuleRepository tierRuleRepository;
     private final List<TierRuleEvaluator> tierRuleEvaluators;
     private final SubscriptionMapper subscriptionMapper;
+    private final SubscriptionHistoryService subscriptionHistoryService;
+    private final MembershipTierRepository membershipTierRepository;
+
     @Override
+    @Transactional
     public SubscriptionResponse evaluateTier(UUID subscriptionId) {
 
         Subscription subscription = getSubscription(subscriptionId);
+        MembershipTier currentTier = subscription.getCurrentTier();
 
         List<TierRule> activeTierRules = getActiveTierRules();
 
         Map<MembershipTier, List<TierRule>> tierRulesMap = groupRulesByTier(activeTierRules);
 
-        MembershipTier highestEligibleTier =  determineHighestEligibleTier(subscription, tierRulesMap);
+        MembershipTier evaluatedTier = determineEligibleTier(subscription, tierRulesMap);
 
-        updateSubscriptionTier(subscription, highestEligibleTier);
+        if (currentTier.equals(evaluatedTier)) {
+            return subscriptionMapper.mapToResponse(subscription);
+        }
+
+        updateSubscriptionTier(subscription, currentTier, evaluatedTier);
 
         return subscriptionMapper.mapToResponse(subscription);
     }
@@ -65,25 +78,26 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
                 ));
     }
 
-    private MembershipTier determineHighestEligibleTier(Subscription subscription, Map<MembershipTier, List<TierRule>> tierRulesMap) {
+    private MembershipTier determineEligibleTier(Subscription subscription, Map<MembershipTier, List<TierRule>> tierRulesMap) {
 
-        MembershipTier highestEligibleTier = subscription.getCurrentTier();
+        MembershipTier eligibleTier = getDefaultTier();
 
-        for (Map.Entry<MembershipTier, List<TierRule>> entry : tierRulesMap.entrySet()) {
+        for (Map.Entry<MembershipTier, List<TierRule>> entry
+                : tierRulesMap.entrySet()) {
 
             MembershipTier membershipTier = entry.getKey();
 
             List<TierRule> tierRules = entry.getValue();
 
-            if (areAllRulesEligible(subscription, tierRules) &&
-                    membershipTier.getPriority() >
-                            highestEligibleTier.getPriority()) {
+            if (areAllRulesEligible(subscription, tierRules)
+                    && membershipTier.getPriority() >
+                    eligibleTier.getPriority()) {
 
-                highestEligibleTier = membershipTier;
+                eligibleTier = membershipTier;
             }
         }
 
-        return highestEligibleTier;
+        return eligibleTier;
     }
 
     private boolean areAllRulesEligible(Subscription subscription, List<TierRule> tierRules) {
@@ -112,9 +126,36 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
                 );
     }
 
-    private void updateSubscriptionTier(Subscription subscription, MembershipTier membershipTier) {
+    private void updateSubscriptionTier(Subscription subscription, MembershipTier currentTier, MembershipTier evaluatedTier) {
 
-        subscription.setCurrentTier(membershipTier);
+        subscription.setCurrentTier(evaluatedTier);
+
+        SubscriptionActionType subscriptionActionType = determineActionType(currentTier, evaluatedTier);
         subscriptionRepository.save(subscription);
+
+        subscriptionHistoryService.recordTierHistory(
+                subscription,
+                subscriptionActionType,
+                subscription.getCurrentTier().getTierType().name(),
+                evaluatedTier.getTierType().name(),
+                subscriptionActionType.getDefaultReason()
+        );
+    }
+
+    private SubscriptionActionType determineActionType(MembershipTier currentTier, MembershipTier evaluatedTier) {
+
+        return evaluatedTier.getPriority() >
+                currentTier.getPriority()
+                ? SubscriptionActionType.UPGRADED
+                : SubscriptionActionType.DOWNGRADED;
+    }
+
+    private MembershipTier getDefaultTier() {
+
+        return membershipTierRepository
+                .findByDefaultTierTrueAndActiveTrue()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Default tier not configured"
+                ));
     }
 }
