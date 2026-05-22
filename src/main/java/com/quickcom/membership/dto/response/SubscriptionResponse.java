@@ -14,16 +14,10 @@ import java.util.UUID;
 public class SubscriptionResponse {
 
     private UUID subscriptionId;
-
     private String userEmail;
-
     private PlanType planType;
-
     private TierType currentTier;
-
     private SubscriptionStatus status;
-
     private LocalDateTime startDate;
-
     private LocalDateTime expiryDate;
 }
