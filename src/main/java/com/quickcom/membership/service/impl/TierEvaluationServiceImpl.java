@@ -136,7 +136,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
         subscriptionHistoryService.recordTierHistory(
                 subscription,
                 subscriptionActionType,
-                subscription.getCurrentTier().getTierType().name(),
+                currentTier.getTierType().name(),
                 evaluatedTier.getTierType().name(),
                 subscriptionActionType.getDefaultReason()
         );
