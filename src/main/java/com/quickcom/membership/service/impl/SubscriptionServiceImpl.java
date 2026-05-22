@@ -82,6 +82,33 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         return subscriptionMapper.mapToResponse(subscription);
     }
 
+    @Override
+    @Transactional
+    public void cancelSubscription(UUID subscriptionId) {
+
+        Subscription subscription =
+                subscriptionRepository.findById(subscriptionId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException("Subscription not found.")
+                        );
+
+        if(subscription.getStatus() == SubscriptionStatus.CANCELLED) {
+            throw new IllegalStateException("Subscription already cancelled.");
+        }
+
+        subscription.setStatus(SubscriptionStatus.CANCELLED);
+
+        subscriptionHistoryService.recordTierHistory(
+                subscription,
+                SubscriptionActionType.CANCELLED,
+                subscription.getCurrentTier().getTierType().name(),
+                null,
+                SubscriptionActionType.CANCELLED.getDefaultReason()
+        );
+
+        subscriptionRepository.save(subscription);
+    }
+
     private User findOrCreateUser(
             CreateSubscriptionRequest request
     ) {

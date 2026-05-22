@@ -9,4 +9,5 @@ public interface SubscriptionService {
 
     SubscriptionResponse createSubscription(CreateSubscriptionRequest createSubscriptionRequest);
     SubscriptionResponse getSubscription(UUID subscriptionId);
+    void cancelSubscription(UUID subscriptionId);
 }

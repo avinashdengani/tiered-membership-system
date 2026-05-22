@@ -43,6 +43,15 @@ public class SubscriptionController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/{subscriptionId}/cancel")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelSubscription(
+            @PathVariable UUID subscriptionId
+    ) {
+
+        subscriptionService.cancelSubscription(subscriptionId);
+    }
+
     @PostMapping("/{subscriptionId}/evaluate-tier")
     public ResponseEntity<SubscriptionResponse> evaluateTier(
             @PathVariable UUID subscriptionId
