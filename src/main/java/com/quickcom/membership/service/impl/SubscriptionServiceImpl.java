@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -65,6 +66,18 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 defaultTier.getTierType().name(),
                 SubscriptionActionType.SUBSCRIBED.getDefaultReason()
         );
+
+        return subscriptionMapper.mapToResponse(subscription);
+    }
+
+    @Override
+    public SubscriptionResponse getSubscription(UUID subscriptionId) {
+
+        Subscription subscription =
+                subscriptionRepository.findById(subscriptionId)
+                    .orElseThrow(() ->
+                            new IllegalArgumentException("Subscription not found.")
+                    );
 
         return subscriptionMapper.mapToResponse(subscription);
     }

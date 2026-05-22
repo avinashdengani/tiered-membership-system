@@ -33,6 +33,16 @@ public class SubscriptionController {
 
     }
 
+    @GetMapping("/{subscriptionId}")
+    public ResponseEntity<SubscriptionResponse> getSubscription(
+            @PathVariable UUID subscriptionId
+    ) {
+
+        SubscriptionResponse response = subscriptionService.getSubscription(subscriptionId);
+
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/{subscriptionId}/evaluate-tier")
     public ResponseEntity<SubscriptionResponse> evaluateTier(
             @PathVariable UUID subscriptionId
