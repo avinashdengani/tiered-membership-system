@@ -23,4 +23,7 @@ public class MembershipTier extends BaseEntity{
 
     @Column(nullable = false)
     private Boolean active = true;
+
+    @Column
+    private boolean defaultTier;
 }

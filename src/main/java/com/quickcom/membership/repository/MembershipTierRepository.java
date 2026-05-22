@@ -12,6 +12,6 @@ import java.util.UUID;
 public interface MembershipTierRepository extends JpaRepository<MembershipTier, UUID> {
 
     Optional<MembershipTier> findByTierTypeAndActiveTrue(TierType tierType);
-
+    Optional<MembershipTier> findByDefaultTierTrueAndActiveTrue();
     List<MembershipTier> findAllByActiveTrueOrderByPriorityAsc();
 }
