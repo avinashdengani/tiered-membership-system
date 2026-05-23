@@ -72,6 +72,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public SubscriptionResponse getSubscription(UUID subscriptionId) {
 
         Subscription subscription =

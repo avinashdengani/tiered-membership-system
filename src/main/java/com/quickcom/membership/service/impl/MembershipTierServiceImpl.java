@@ -6,6 +6,7 @@ import com.quickcom.membership.repository.MembershipTierRepository;
 import com.quickcom.membership.service.MembershipTierService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,6 +17,7 @@ public class MembershipTierServiceImpl implements MembershipTierService {
     private final MembershipTierRepository membershipTierRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<MembershipTierResponse> getAllActiveTiers() {
 
         return membershipTierMapper.mapToResponse(
