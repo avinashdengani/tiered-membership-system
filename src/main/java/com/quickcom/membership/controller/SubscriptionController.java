@@ -1,5 +1,6 @@
 package com.quickcom.membership.controller;
 
+import com.quickcom.membership.domain.enums.TierType;
 import com.quickcom.membership.dto.request.CreateSubscriptionRequest;
 import com.quickcom.membership.dto.response.SubscriptionResponse;
 import com.quickcom.membership.service.SubscriptionService;
@@ -50,6 +51,20 @@ public class SubscriptionController {
     ) {
 
         subscriptionService.cancelSubscription(subscriptionId);
+    }
+
+    @PutMapping("/{subscriptionId}/upgrade")
+    public ResponseEntity<SubscriptionResponse> upgradeTier(
+            @PathVariable UUID subscriptionId,
+            @RequestParam TierType newTierType) {
+        return ResponseEntity.ok(subscriptionService.upgradeTier(subscriptionId, newTierType));
+    }
+
+    @PutMapping("/{subscriptionId}/downgrade")
+    public ResponseEntity<SubscriptionResponse> downgradeTier(
+            @PathVariable UUID subscriptionId,
+            @RequestParam TierType newTierType) {
+        return ResponseEntity.ok(subscriptionService.downgradeTier(subscriptionId, newTierType));
     }
 
     @PostMapping("/{subscriptionId}/evaluate-tier")

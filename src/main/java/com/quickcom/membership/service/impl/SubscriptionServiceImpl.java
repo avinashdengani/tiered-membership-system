@@ -109,6 +109,72 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         subscriptionRepository.save(subscription);
     }
 
+    @Override
+    @Transactional
+    public SubscriptionResponse upgradeTier(UUID subscriptionId, TierType newTierType) {
+
+        Subscription subscription =
+                subscriptionRepository.findByIdAndStatus(subscriptionId, SubscriptionStatus.ACTIVE)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException("No active Subscription found.")
+                        );
+
+        MembershipTier newTier = getActiveMembershipTier(newTierType);
+
+        MembershipTier currentTier = subscription.getCurrentTier();
+
+        if(newTier.getPriority() <= currentTier.getPriority()) {
+            throw new IllegalStateException("New tier must be higher than current tier");
+        }
+
+        subscription.setCurrentTier(newTier);
+
+        subscriptionRepository.save(subscription);
+
+        subscriptionHistoryService.recordTierHistory(
+                subscription,
+                SubscriptionActionType.UPGRADED,
+                currentTier.getTierType().name(),
+                newTier.getTierType().name(),
+                SubscriptionActionType.UPGRADED.getDefaultReason()
+        );
+
+        return subscriptionMapper.mapToResponse(subscription);
+    }
+
+    @Transactional
+    @Override
+    public SubscriptionResponse downgradeTier(UUID subscriptionId, TierType newTierType) {
+
+        Subscription subscription =
+                subscriptionRepository.findByIdAndStatus(subscriptionId, SubscriptionStatus.ACTIVE)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException("No active Subscription found.")
+                        );
+
+        MembershipTier newTier = getActiveMembershipTier(newTierType);
+
+        MembershipTier currentTier = subscription.getCurrentTier();
+
+        if(newTier.getPriority() >= currentTier.getPriority()) {
+            throw new IllegalStateException("New tier must be lower than current tier");
+        }
+
+        subscription.setCurrentTier(newTier);
+
+        subscriptionRepository.save(subscription);
+
+        subscriptionHistoryService.recordTierHistory(
+                subscription,
+                SubscriptionActionType.DOWNGRADED,
+                currentTier.getTierType().name(),
+                newTier.getTierType().name(),
+                SubscriptionActionType.DOWNGRADED.getDefaultReason()
+        );
+
+        return subscriptionMapper.mapToResponse(subscription);
+    }
+
     private User findOrCreateUser(
             CreateSubscriptionRequest request
     ) {
@@ -158,6 +224,17 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 )
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Membership plan not found"
+                ));
+    }
+
+    private MembershipTier getActiveMembershipTier(
+            TierType tierType
+    ) {
+
+        return membershipTierRepository
+                .findByTierTypeAndActiveTrue(tierType)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Membership Tier not found"
                 ));
     }
 
