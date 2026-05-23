@@ -98,6 +98,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         subscription.setStatus(SubscriptionStatus.CANCELLED);
 
+        subscriptionRepository.save(subscription);
+
         subscriptionHistoryService.recordTierHistory(
                 subscription,
                 SubscriptionActionType.CANCELLED,
@@ -106,7 +108,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 SubscriptionActionType.CANCELLED.getDefaultReason()
         );
 
-        subscriptionRepository.save(subscription);
     }
 
     @Override
