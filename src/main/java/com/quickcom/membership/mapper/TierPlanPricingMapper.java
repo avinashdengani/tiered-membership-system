@@ -21,7 +21,7 @@ public class TierPlanPricingMapper {
         return response;
     }
 
-    public List<TierPlanPricingResponse> mapToResponseList(List<TierPlanPricing> tierPlanPricingList) {
+    public List<TierPlanPricingResponse> mapToResponse(List<TierPlanPricing> tierPlanPricingList) {
 
         return tierPlanPricingList.stream().map(this::mapToResponse).toList();
     }
