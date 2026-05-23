@@ -17,7 +17,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TierPlanPricingController {
 
-    private final MembershipTierService membershipTierService;
     private final TierPlanPricingService tierPlanPricingService;
 
     @GetMapping
