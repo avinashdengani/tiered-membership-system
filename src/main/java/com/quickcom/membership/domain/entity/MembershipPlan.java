@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @Setter
 @Entity
 @Table(name = "membership_plans")
-public class MembershipPlan extends BaseEntity{
+public class MembershipPlan extends BaseEntity {
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -19,9 +19,6 @@ public class MembershipPlan extends BaseEntity{
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private PlanType planType;
-
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal price;
 
     @Column(nullable = false)
     private Integer validityDays;

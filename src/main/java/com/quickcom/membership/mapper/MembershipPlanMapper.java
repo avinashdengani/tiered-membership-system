@@ -21,7 +21,6 @@ public class MembershipPlanMapper {
         response.setId(membershipPlan.getId());
         response.setPlanType(membershipPlan.getPlanType());
         response.setName(membershipPlan.getName());
-        response.setPrice(membershipPlan.getPrice());
         response.setValidityDays(membershipPlan.getValidityDays());
 
         return response;
