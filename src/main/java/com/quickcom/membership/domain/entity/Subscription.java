@@ -37,7 +37,7 @@ public class Subscription extends BaseEntity {
     private LocalDateTime expiryDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tier_plan_pricing_id")
+    @JoinColumn(name = "tier_plan_pricing_id", nullable = false)
     private TierPlanPricing tierPlanPricing;
 
     @Column(nullable = false, precision = 10, scale = 2)
