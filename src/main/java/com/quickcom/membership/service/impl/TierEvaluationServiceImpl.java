@@ -4,6 +4,7 @@ import com.quickcom.membership.domain.entity.MembershipTier;
 import com.quickcom.membership.domain.entity.Subscription;
 import com.quickcom.membership.domain.entity.TierRule;
 import com.quickcom.membership.domain.enums.SubscriptionActionType;
+import com.quickcom.membership.domain.enums.SubscriptionStatus;
 import com.quickcom.membership.dto.response.SubscriptionResponse;
 import com.quickcom.membership.mapper.SubscriptionMapper;
 import com.quickcom.membership.repository.MembershipTierRepository;
@@ -36,7 +37,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
     @Transactional
     public SubscriptionResponse evaluateTier(UUID subscriptionId) {
 
-        Subscription subscription = getSubscription(subscriptionId);
+        Subscription subscription = getActiveSubscription(subscriptionId);
         MembershipTier currentTier = subscription.getCurrentTier();
 
         List<TierRule> activeTierRules = getActiveTierRules();
@@ -54,15 +55,11 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
         return subscriptionMapper.mapToResponse(subscription);
     }
 
-    private Subscription getSubscription(UUID subscriptionId) {
+    private Subscription getActiveSubscription(UUID subscriptionId) {
 
-        return subscriptionRepository.findById(
-                subscriptionId
-        ).orElseThrow(() ->
-                new IllegalArgumentException(
-                        "Subscription not found"
-                )
-        );
+        return subscriptionRepository
+                .findByIdAndStatus(subscriptionId, SubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new IllegalArgumentException("Subscription not found"));
     }
 
     private List<TierRule> getActiveTierRules() {
@@ -72,26 +69,22 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
 
     private Map<MembershipTier, List<TierRule>> groupRulesByTier(List<TierRule> tierRules) {
 
-        return tierRules.stream()
-                .collect(Collectors.groupingBy(
-                        TierRule::getMembershipTier
-                ));
+        return tierRules.stream().collect(Collectors.groupingBy(TierRule::getMembershipTier));
     }
 
-    private MembershipTier determineEligibleTier(Subscription subscription, Map<MembershipTier, List<TierRule>> tierRulesMap) {
+    private MembershipTier determineEligibleTier(
+            Subscription subscription, Map<MembershipTier, List<TierRule>> tierRulesMap) {
 
         MembershipTier eligibleTier = getDefaultTier();
 
-        for (Map.Entry<MembershipTier, List<TierRule>> entry
-                : tierRulesMap.entrySet()) {
+        for (Map.Entry<MembershipTier, List<TierRule>> entry : tierRulesMap.entrySet()) {
 
             MembershipTier membershipTier = entry.getKey();
 
             List<TierRule> tierRules = entry.getValue();
 
             if (areAllRulesEligible(subscription, tierRules)
-                    && membershipTier.getPriority() >
-                    eligibleTier.getPriority()) {
+                    && membershipTier.getPriority() > eligibleTier.getPriority()) {
 
                 eligibleTier = membershipTier;
             }
@@ -102,10 +95,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
 
     private boolean areAllRulesEligible(Subscription subscription, List<TierRule> tierRules) {
 
-        return tierRules.stream()
-                .allMatch(rule ->
-                        evaluateRule(subscription, rule)
-                );
+        return tierRules.stream().allMatch(rule -> evaluateRule(subscription, rule));
     }
 
     private boolean evaluateRule(Subscription subscription, TierRule rule) {
@@ -117,16 +107,13 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
     private TierRuleEvaluator getRuleEvaluator(TierRule rule) {
 
         return tierRuleEvaluators.stream()
-                .filter(evaluator ->
-                        evaluator.getSupportedRuleType() == rule.getRuleType()
-                )
+                .filter(evaluator -> evaluator.getSupportedRuleType() == rule.getRuleType())
                 .findFirst()
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Unsupported rule type")
-                );
+                .orElseThrow(() -> new IllegalArgumentException("Unsupported rule type"));
     }
 
-    private void updateSubscriptionTier(Subscription subscription, MembershipTier currentTier, MembershipTier evaluatedTier) {
+    private void updateSubscriptionTier(
+            Subscription subscription, MembershipTier currentTier, MembershipTier evaluatedTier) {
 
         subscription.setCurrentTier(evaluatedTier);
 
@@ -138,14 +125,12 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
                 subscriptionActionType,
                 currentTier.getTierType().name(),
                 evaluatedTier.getTierType().name(),
-                subscriptionActionType.getDefaultReason()
-        );
+                subscriptionActionType.getDefaultReason());
     }
 
     private SubscriptionActionType determineActionType(MembershipTier currentTier, MembershipTier evaluatedTier) {
 
-        return evaluatedTier.getPriority() >
-                currentTier.getPriority()
+        return evaluatedTier.getPriority() > currentTier.getPriority()
                 ? SubscriptionActionType.UPGRADED
                 : SubscriptionActionType.DOWNGRADED;
     }
@@ -154,8 +139,6 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
 
         return membershipTierRepository
                 .findByDefaultTierTrueAndActiveTrue()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Default tier not configured"
-                ));
+                .orElseThrow(() -> new IllegalArgumentException("Default tier not configured"));
     }
 }
