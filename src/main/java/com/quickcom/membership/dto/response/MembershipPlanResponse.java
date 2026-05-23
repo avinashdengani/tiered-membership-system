@@ -15,6 +15,5 @@ public class MembershipPlanResponse {
     private UUID id;
     private String name;
     private PlanType planType;
-    private BigDecimal price;
     private Integer validityDays;
 }
