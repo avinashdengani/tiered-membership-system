@@ -4,6 +4,7 @@ import com.quickcom.membership.domain.enums.TierType;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -15,4 +16,5 @@ public class MembershipTierResponse {
     private String displayName;
     private Integer priority;
     private boolean defaultTier;
+    private List<BenefitResponse> benefits;
 }

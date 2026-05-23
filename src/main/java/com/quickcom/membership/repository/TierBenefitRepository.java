@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface TierBenefitRepository extends JpaRepository<TierBenefit, UUID> {
 
     List<TierBenefit> findAllByTier(MembershipTier tier);
+    List<TierBenefit> findAllByTierAndBenefitActiveTrue(MembershipTier tier);
+    List<TierBenefit> findAllByTierInAndBenefitActiveTrue(List<MembershipTier> tiers);
 }

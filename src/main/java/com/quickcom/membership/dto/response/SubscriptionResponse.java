@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -20,4 +21,5 @@ public class SubscriptionResponse {
     private SubscriptionStatus status;
     private LocalDateTime startDate;
     private LocalDateTime expiryDate;
+    private List<BenefitResponse> benefits;
 }

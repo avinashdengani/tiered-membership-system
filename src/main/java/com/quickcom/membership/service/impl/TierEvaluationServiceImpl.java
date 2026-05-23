@@ -2,6 +2,7 @@ package com.quickcom.membership.service.impl;
 
 import com.quickcom.membership.domain.entity.MembershipTier;
 import com.quickcom.membership.domain.entity.Subscription;
+import com.quickcom.membership.domain.entity.TierBenefit;
 import com.quickcom.membership.domain.entity.TierRule;
 import com.quickcom.membership.domain.enums.SubscriptionActionType;
 import com.quickcom.membership.domain.enums.SubscriptionStatus;
@@ -12,6 +13,7 @@ import com.quickcom.membership.exception.base.ResourceNotFoundException;
 import com.quickcom.membership.mapper.SubscriptionMapper;
 import com.quickcom.membership.repository.MembershipTierRepository;
 import com.quickcom.membership.repository.SubscriptionRepository;
+import com.quickcom.membership.repository.TierBenefitRepository;
 import com.quickcom.membership.repository.TierRuleRepository;
 import com.quickcom.membership.rule.evaluator.TierRuleEvaluator;
 import com.quickcom.membership.service.SubscriptionHistoryService;
@@ -35,6 +37,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
     private final SubscriptionMapper subscriptionMapper;
     private final SubscriptionHistoryService subscriptionHistoryService;
     private final MembershipTierRepository membershipTierRepository;
+    private final TierBenefitRepository tierBenefitRepository;
 
     @Override
     @Transactional
@@ -50,12 +53,12 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
         MembershipTier evaluatedTier = determineEligibleTier(subscription, tierRulesMap);
 
         if (currentTier.getId().equals(evaluatedTier.getId())) {
-            return subscriptionMapper.mapToResponse(subscription);
+            return mapSubscriptionToResponse(subscription);
         }
 
         updateSubscriptionTier(subscription, currentTier, evaluatedTier);
 
-        return subscriptionMapper.mapToResponse(subscription);
+        return mapSubscriptionToResponse(subscription);
     }
 
     private Subscription getActiveSubscription(UUID subscriptionId) {
@@ -143,5 +146,13 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
         return membershipTierRepository
                 .findByDefaultTierTrueAndActiveTrue()
                 .orElseThrow(() -> new ConfigurationException(ExceptionMessages.DEFAULT_TIER_NOT_CONFIGURED));
+    }
+
+    private SubscriptionResponse mapSubscriptionToResponse(Subscription subscription) {
+
+        List<TierBenefit> tierBenefits =
+                tierBenefitRepository.findAllByTierAndBenefitActiveTrue(subscription.getCurrentTier());
+
+        return subscriptionMapper.mapToResponse(subscription, tierBenefits);
     }
 }

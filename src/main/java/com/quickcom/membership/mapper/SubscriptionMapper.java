@@ -1,15 +1,22 @@
 package com.quickcom.membership.mapper;
 
 import com.quickcom.membership.domain.entity.Subscription;
+import com.quickcom.membership.domain.entity.TierBenefit;
 
 import com.quickcom.membership.dto.response.SubscriptionResponse;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
+@RequiredArgsConstructor
 public class SubscriptionMapper {
 
-    public SubscriptionResponse mapToResponse(Subscription subscription) {
+    private final BenefitMapper benefitMapper;
+
+    public SubscriptionResponse mapToResponse(Subscription subscription, List<TierBenefit> tierBenefits) {
 
         SubscriptionResponse response = new SubscriptionResponse();
 
@@ -20,6 +27,7 @@ public class SubscriptionMapper {
         response.setStatus(subscription.getStatus());
         response.setStartDate(subscription.getStartDate());
         response.setExpiryDate(subscription.getExpiryDate());
+        response.setBenefits(benefitMapper.mapTierBenefitsToResponse(tierBenefits));
 
         return response;
     }

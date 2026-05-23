@@ -3,6 +3,7 @@ package com.quickcom.membership.service.impl;
 import com.quickcom.membership.domain.entity.MembershipPlan;
 import com.quickcom.membership.domain.entity.MembershipTier;
 import com.quickcom.membership.domain.entity.Subscription;
+import com.quickcom.membership.domain.entity.TierBenefit;
 import com.quickcom.membership.domain.entity.User;
 
 import com.quickcom.membership.domain.enums.SubscriptionActionType;
@@ -20,6 +21,7 @@ import com.quickcom.membership.mapper.SubscriptionMapper;
 import com.quickcom.membership.repository.MembershipPlanRepository;
 import com.quickcom.membership.repository.MembershipTierRepository;
 import com.quickcom.membership.repository.SubscriptionRepository;
+import com.quickcom.membership.repository.TierBenefitRepository;
 import com.quickcom.membership.repository.UserRepository;
 
 import com.quickcom.membership.service.SubscriptionHistoryService;
@@ -32,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -42,6 +45,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private final MembershipPlanRepository membershipPlanRepository;
     private final MembershipTierRepository membershipTierRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final TierBenefitRepository tierBenefitRepository;
     private final SubscriptionMapper subscriptionMapper;
     private final SubscriptionHistoryService subscriptionHistoryService;
 
@@ -68,7 +72,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 defaultTier.getTierType().name(),
                 SubscriptionActionType.SUBSCRIBED.getDefaultReason());
 
-        return subscriptionMapper.mapToResponse(subscription);
+        return mapSubscriptionToResponse(subscription);
     }
 
     @Override
@@ -79,7 +83,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 subscriptionRepository.findById(subscriptionId)
                         .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.SUBSCRIPTION_NOT_FOUND));
 
-        return subscriptionMapper.mapToResponse(subscription);
+        return mapSubscriptionToResponse(subscription);
     }
 
     @Override
@@ -137,7 +141,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 newTier.getTierType().name(),
                 SubscriptionActionType.UPGRADED.getDefaultReason());
 
-        return subscriptionMapper.mapToResponse(subscription);
+        return mapSubscriptionToResponse(subscription);
     }
 
     @Transactional
@@ -167,7 +171,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 newTier.getTierType().name(),
                 SubscriptionActionType.DOWNGRADED.getDefaultReason());
 
-        return subscriptionMapper.mapToResponse(subscription);
+        return mapSubscriptionToResponse(subscription);
     }
 
     private User findOrCreateUser(CreateSubscriptionRequest request) {
@@ -232,5 +236,13 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         subscription.setExpiryDate(now.plusDays(membershipPlan.getValidityDays()));
 
         return subscription;
+    }
+
+    private SubscriptionResponse mapSubscriptionToResponse(Subscription subscription) {
+
+        List<TierBenefit> tierBenefits =
+                tierBenefitRepository.findAllByTierAndBenefitActiveTrue(subscription.getCurrentTier());
+
+        return subscriptionMapper.mapToResponse(subscription, tierBenefits);
     }
 }
