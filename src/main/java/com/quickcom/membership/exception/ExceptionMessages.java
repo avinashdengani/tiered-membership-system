@@ -23,6 +23,7 @@ public final class ExceptionMessages {
     public static final String VALIDATION_EXCEPTION = "Validation Exception";
     public static final String INVALID_PARAMETER = "Invalid value for parameter: ";
 
-    private ExceptionMessages() {
-    }
+    public static final String TIER_PLAN_PRICING_NOT_FOUND = "Selected tier and plan is not available.";
+
+    private ExceptionMessages() {}
 }

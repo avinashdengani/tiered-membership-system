@@ -1,8 +1,6 @@
 package com.quickcom.membership.dto.response;
 
-import com.quickcom.membership.domain.enums.PlanType;
 import com.quickcom.membership.domain.enums.SubscriptionStatus;
-import com.quickcom.membership.domain.enums.TierType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,10 +14,9 @@ public class SubscriptionResponse {
 
     private UUID subscriptionId;
     private String userEmail;
-    private PlanType planType;
-    private TierType currentTier;
     private SubscriptionStatus status;
     private LocalDateTime startDate;
     private LocalDateTime expiryDate;
     private List<BenefitResponse> benefits;
+    private TierPlanPricingResponse pricing;
 }

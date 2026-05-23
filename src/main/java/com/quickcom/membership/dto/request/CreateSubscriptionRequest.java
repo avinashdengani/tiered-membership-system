@@ -1,6 +1,7 @@
 package com.quickcom.membership.dto.request;
 
 import com.quickcom.membership.domain.enums.PlanType;
+import com.quickcom.membership.domain.enums.TierType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,4 +23,7 @@ public class CreateSubscriptionRequest {
 
     @NotNull(message = "planType is required")
     private PlanType planType;
+
+    @NotNull(message = "tierType is required")
+    private TierType tierType;
 }

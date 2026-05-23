@@ -1,9 +1,6 @@
 package com.quickcom.membership.service.impl;
 
-import com.quickcom.membership.domain.entity.MembershipTier;
-import com.quickcom.membership.domain.entity.Subscription;
-import com.quickcom.membership.domain.entity.TierBenefit;
-import com.quickcom.membership.domain.entity.TierRule;
+import com.quickcom.membership.domain.entity.*;
 import com.quickcom.membership.domain.enums.SubscriptionActionType;
 import com.quickcom.membership.domain.enums.SubscriptionStatus;
 import com.quickcom.membership.dto.response.SubscriptionResponse;
@@ -11,10 +8,7 @@ import com.quickcom.membership.exception.ExceptionMessages;
 import com.quickcom.membership.exception.base.ConfigurationException;
 import com.quickcom.membership.exception.base.ResourceNotFoundException;
 import com.quickcom.membership.mapper.SubscriptionMapper;
-import com.quickcom.membership.repository.MembershipTierRepository;
-import com.quickcom.membership.repository.SubscriptionRepository;
-import com.quickcom.membership.repository.TierBenefitRepository;
-import com.quickcom.membership.repository.TierRuleRepository;
+import com.quickcom.membership.repository.*;
 import com.quickcom.membership.rule.evaluator.TierRuleEvaluator;
 import com.quickcom.membership.service.SubscriptionHistoryService;
 import com.quickcom.membership.service.TierEvaluationService;
@@ -38,6 +32,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
     private final SubscriptionHistoryService subscriptionHistoryService;
     private final MembershipTierRepository membershipTierRepository;
     private final TierBenefitRepository tierBenefitRepository;
+    private final TierPlanPricingRepository tierPlanPricingRepository;
 
     @Override
     @Transactional
@@ -121,7 +116,10 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
     private void updateSubscriptionTier(
             Subscription subscription, MembershipTier currentTier, MembershipTier evaluatedTier) {
 
+        TierPlanPricing tierPlanPricing = getTierPlanPricing(evaluatedTier, subscription.getMembershipPlan());
+
         subscription.setCurrentTier(evaluatedTier);
+        subscription.setTierPlanPricing(tierPlanPricing);
 
         SubscriptionActionType subscriptionActionType = determineActionType(currentTier, evaluatedTier);
         subscriptionRepository.save(subscription);
@@ -154,5 +152,12 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
                 tierBenefitRepository.findAllByTierAndBenefitActiveTrue(subscription.getCurrentTier());
 
         return subscriptionMapper.mapToResponse(subscription, tierBenefits);
+    }
+
+    private TierPlanPricing getTierPlanPricing(MembershipTier membershipTier, MembershipPlan membershipPlan) {
+
+        return tierPlanPricingRepository
+                .findByMembershipTierAndMembershipPlanAndActiveTrue(membershipTier, membershipPlan)
+                .orElseThrow(() -> new ConfigurationException(ExceptionMessages.TIER_PLAN_PRICING_NOT_FOUND));
     }
 }

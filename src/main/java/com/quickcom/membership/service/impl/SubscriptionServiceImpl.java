@@ -1,11 +1,8 @@
 package com.quickcom.membership.service.impl;
 
-import com.quickcom.membership.domain.entity.MembershipPlan;
-import com.quickcom.membership.domain.entity.MembershipTier;
-import com.quickcom.membership.domain.entity.Subscription;
-import com.quickcom.membership.domain.entity.TierBenefit;
-import com.quickcom.membership.domain.entity.User;
+import com.quickcom.membership.domain.entity.*;
 
+import com.quickcom.membership.domain.enums.PlanType;
 import com.quickcom.membership.domain.enums.SubscriptionActionType;
 import com.quickcom.membership.domain.enums.SubscriptionStatus;
 import com.quickcom.membership.domain.enums.TierType;
@@ -18,11 +15,7 @@ import com.quickcom.membership.exception.base.ConfigurationException;
 import com.quickcom.membership.exception.base.ConflictException;
 import com.quickcom.membership.exception.base.ResourceNotFoundException;
 import com.quickcom.membership.mapper.SubscriptionMapper;
-import com.quickcom.membership.repository.MembershipPlanRepository;
-import com.quickcom.membership.repository.MembershipTierRepository;
-import com.quickcom.membership.repository.SubscriptionRepository;
-import com.quickcom.membership.repository.TierBenefitRepository;
-import com.quickcom.membership.repository.UserRepository;
+import com.quickcom.membership.repository.*;
 
 import com.quickcom.membership.service.SubscriptionHistoryService;
 import com.quickcom.membership.service.SubscriptionService;
@@ -48,6 +41,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private final TierBenefitRepository tierBenefitRepository;
     private final SubscriptionMapper subscriptionMapper;
     private final SubscriptionHistoryService subscriptionHistoryService;
+    private final TierPlanPricingRepository tierPlanPricingRepository;
 
     @Override
     @Transactional
@@ -57,11 +51,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         validateNoActiveSubscription(user);
 
-        MembershipPlan membershipPlan = getActiveMembershipPlan(request);
+        MembershipPlan membershipPlan = getActiveMembershipPlan(request.getPlanType());
+        MembershipTier membershipTier = getActiveMembershipTier(request.getTierType());
+        TierPlanPricing tierPlanPricing = getTierPlanPricing(membershipTier, membershipPlan);
 
-        MembershipTier defaultTier = getDefaultTier();
-
-        Subscription subscription = buildSubscription(user, membershipPlan, defaultTier);
+        Subscription subscription = buildSubscription(user, membershipPlan, membershipTier, tierPlanPricing);
 
         subscriptionRepository.save(subscription);
 
@@ -69,7 +63,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 subscription,
                 SubscriptionActionType.SUBSCRIBED,
                 null,
-                defaultTier.getTierType().name(),
+                membershipTier.getTierType().name(),
                 SubscriptionActionType.SUBSCRIBED.getDefaultReason());
 
         return mapSubscriptionToResponse(subscription);
@@ -79,9 +73,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Transactional(readOnly = true)
     public SubscriptionResponse getSubscription(UUID subscriptionId) {
 
-        Subscription subscription =
-                subscriptionRepository.findById(subscriptionId)
-                        .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.SUBSCRIPTION_NOT_FOUND));
+        Subscription subscription = subscriptionRepository
+                .findById(subscriptionId)
+                .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.SUBSCRIPTION_NOT_FOUND));
 
         return mapSubscriptionToResponse(subscription);
     }
@@ -90,9 +84,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Transactional
     public void cancelSubscription(UUID subscriptionId) {
 
-        Subscription subscription =
-                subscriptionRepository.findById(subscriptionId)
-                        .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.SUBSCRIPTION_NOT_FOUND));
+        Subscription subscription = subscriptionRepository
+                .findById(subscriptionId)
+                .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.SUBSCRIPTION_NOT_FOUND));
 
         if (subscription.getStatus() == SubscriptionStatus.CANCELLED) {
             throw new ConflictException(ExceptionMessages.SUBSCRIPTION_ALREADY_CANCELLED);
@@ -200,10 +194,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
     }
 
-    private MembershipPlan getActiveMembershipPlan(CreateSubscriptionRequest request) {
+    private MembershipPlan getActiveMembershipPlan(PlanType planType) {
 
         return membershipPlanRepository
-                .findByPlanTypeAndActiveTrue(request.getPlanType())
+                .findByPlanTypeAndActiveTrue(planType)
                 .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.MEMBERSHIP_PLAN_NOT_FOUND));
     }
 
@@ -221,13 +215,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .orElseThrow(() -> new ConfigurationException(ExceptionMessages.DEFAULT_TIER_NOT_CONFIGURED));
     }
 
-    private Subscription buildSubscription(User user, MembershipPlan membershipPlan, MembershipTier membershipTier) {
+    private Subscription buildSubscription(
+            User user, MembershipPlan membershipPlan, MembershipTier membershipTier, TierPlanPricing tierPlanPricing) {
 
         Subscription subscription = new Subscription();
 
         subscription.setUser(user);
         subscription.setMembershipPlan(membershipPlan);
         subscription.setCurrentTier(membershipTier);
+        subscription.setTierPlanPricing(tierPlanPricing);
+        subscription.setAmountPaid(tierPlanPricing.getPrice());
         subscription.setStatus(SubscriptionStatus.ACTIVE);
 
         LocalDateTime now = LocalDateTime.now();
@@ -242,7 +239,13 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         List<TierBenefit> tierBenefits =
                 tierBenefitRepository.findAllByTierAndBenefitActiveTrue(subscription.getCurrentTier());
-
         return subscriptionMapper.mapToResponse(subscription, tierBenefits);
+    }
+
+    private TierPlanPricing getTierPlanPricing(MembershipTier membershipTier, MembershipPlan membershipPlan) {
+
+        return tierPlanPricingRepository
+                .findByMembershipTierAndMembershipPlanAndActiveTrue(membershipTier, membershipPlan)
+                .orElseThrow(() -> new ConfigurationException(ExceptionMessages.TIER_PLAN_PRICING_NOT_FOUND));
     }
 }

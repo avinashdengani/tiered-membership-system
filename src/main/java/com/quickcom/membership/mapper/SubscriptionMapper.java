@@ -15,6 +15,7 @@ import java.util.List;
 public class SubscriptionMapper {
 
     private final BenefitMapper benefitMapper;
+    private final TierPlanPricingMapper tierPlanPricingMapper;
 
     public SubscriptionResponse mapToResponse(Subscription subscription, List<TierBenefit> tierBenefits) {
 
@@ -22,13 +23,11 @@ public class SubscriptionMapper {
 
         response.setSubscriptionId(subscription.getId());
         response.setUserEmail(subscription.getUser().getEmail());
-        response.setPlanType(subscription.getMembershipPlan().getPlanType());
-        response.setCurrentTier(subscription.getCurrentTier().getTierType());
         response.setStatus(subscription.getStatus());
         response.setStartDate(subscription.getStartDate());
         response.setExpiryDate(subscription.getExpiryDate());
         response.setBenefits(benefitMapper.mapTierBenefitsToResponse(tierBenefits));
-
+        response.setPricing(tierPlanPricingMapper.mapToResponse(subscription.getTierPlanPricing()));
         return response;
     }
 }
