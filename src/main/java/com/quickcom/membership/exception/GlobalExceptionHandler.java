@@ -1,58 +1,79 @@
 package com.quickcom.membership.exception;
 
+import com.quickcom.membership.exception.base.BadRequestException;
+import com.quickcom.membership.exception.base.ConfigurationException;
+import com.quickcom.membership.exception.base.ConflictException;
+import com.quickcom.membership.exception.base.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiErrorResponse> handleIllegalArgumentException(
-            IllegalArgumentException exception,
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleResourceNotFoundException(
+            ResourceNotFoundException exception,
             HttpServletRequest request
     ) {
-        ApiErrorResponse response = buildErrorResponse(
-                HttpStatus.BAD_REQUEST,
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
                 exception.getMessage(),
-                request.getRequestURI()
+                request
         );
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(response);
     }
 
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ApiErrorResponse> handleIllegalStateException(
-            IllegalStateException exception,
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiErrorResponse> handleBadRequestException(
+            BadRequestException exception,
             HttpServletRequest request
     ) {
-        ApiErrorResponse response = buildErrorResponse(
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage(),
+                request
+        );
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleConflictException(
+            ConflictException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
                 HttpStatus.CONFLICT,
                 exception.getMessage(),
-                request.getRequestURI()
+                request
         );
+    }
 
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(response);
+    @ExceptionHandler(ConfigurationException.class)
+    public ResponseEntity<ApiErrorResponse> handleConfigurationException(
+            ConfigurationException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                exception.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiErrorResponse> handleValidationException(
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValidException(
             MethodArgumentNotValidException exception,
             HttpServletRequest request
     ) {
 
-        String message = "Validation Exception";
+        String message = ExceptionMessages.VALIDATION_EXCEPTION;
 
         if (exception.getBindingResult().getFieldError() != null) {
 
@@ -61,48 +82,37 @@ public class GlobalExceptionHandler {
                     .getDefaultMessage();
         }
 
-        ApiErrorResponse response = buildErrorResponse(
+        return buildResponse(
                 HttpStatus.BAD_REQUEST,
                 message,
-                request.getRequestURI()
+                request
         );
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(response);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiErrorResponse> handleGenericException(
-            Exception exception,
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException exception,
             HttpServletRequest request
     ) {
+        String message = ExceptionMessages.INVALID_PARAMETER + exception.getName();
 
-        ApiErrorResponse response =
-                buildErrorResponse(
-                        HttpStatus.INTERNAL_SERVER_ERROR,
-                        "Something went wrong",
-                        request.getRequestURI()
-                );
-
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(response);
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                message,
+                request
+        );
     }
 
-    private ApiErrorResponse buildErrorResponse(
-            HttpStatus status,
-            String message,
-            String path
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request
     ) {
-
-        return ApiErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(status.value())
-                .error(status.getReasonPhrase())
-                .message(message)
-                .path(path)
-                .build();
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                ExceptionMessages.DATA_INTEGRITY_CONFLICT,
+                request
+        );
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
@@ -110,16 +120,41 @@ public class GlobalExceptionHandler {
             ObjectOptimisticLockingFailureException exception,
             HttpServletRequest request
     ) {
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                ExceptionMessages.CONCURRENT_UPDATE_DETECTED,
+                request
+        );
+    }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleGenericException(
+            Exception exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                ExceptionMessages.SOMETHING_WENT_WRONG,
+                request
+        );
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildResponse(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request
+    ) {
         ApiErrorResponse response =
-                buildErrorResponse(
-                        HttpStatus.CONFLICT,
-                        "Concurrent update detected. Please retry.",
+                new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.name(),
+                        message,
                         request.getRequestURI()
                 );
 
         return ResponseEntity
-                .status(HttpStatus.CONFLICT)
+                .status(status)
                 .body(response);
     }
 }

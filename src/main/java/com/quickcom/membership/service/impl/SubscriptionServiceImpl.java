@@ -12,6 +12,10 @@ import com.quickcom.membership.domain.enums.TierType;
 import com.quickcom.membership.dto.request.CreateSubscriptionRequest;
 import com.quickcom.membership.dto.response.SubscriptionResponse;
 
+import com.quickcom.membership.exception.ExceptionMessages;
+import com.quickcom.membership.exception.base.ConfigurationException;
+import com.quickcom.membership.exception.base.ConflictException;
+import com.quickcom.membership.exception.base.ResourceNotFoundException;
 import com.quickcom.membership.mapper.SubscriptionMapper;
 import com.quickcom.membership.repository.MembershipPlanRepository;
 import com.quickcom.membership.repository.MembershipTierRepository;
@@ -43,9 +47,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    public SubscriptionResponse createSubscription(
-            CreateSubscriptionRequest request
-    ) {
+    public SubscriptionResponse createSubscription(CreateSubscriptionRequest request) {
 
         User user = findOrCreateUser(request);
 
@@ -64,8 +66,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 SubscriptionActionType.SUBSCRIBED,
                 null,
                 defaultTier.getTierType().name(),
-                SubscriptionActionType.SUBSCRIBED.getDefaultReason()
-        );
+                SubscriptionActionType.SUBSCRIBED.getDefaultReason());
 
         return subscriptionMapper.mapToResponse(subscription);
     }
@@ -75,9 +76,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         Subscription subscription =
                 subscriptionRepository.findById(subscriptionId)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException("Subscription not found.")
-                        );
+                        .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.SUBSCRIPTION_NOT_FOUND));
 
         return subscriptionMapper.mapToResponse(subscription);
     }
@@ -88,12 +87,14 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         Subscription subscription =
                 subscriptionRepository.findById(subscriptionId)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException("Subscription not found.")
-                        );
+                        .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.SUBSCRIPTION_NOT_FOUND));
 
         if (subscription.getStatus() == SubscriptionStatus.CANCELLED) {
-            throw new IllegalStateException("Subscription already cancelled.");
+            throw new ConflictException(ExceptionMessages.SUBSCRIPTION_ALREADY_CANCELLED);
+        }
+
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw new ResourceNotFoundException(ExceptionMessages.ACTIVE_SUBSCRIPTION_NOT_FOUND);
         }
 
         subscription.setStatus(SubscriptionStatus.CANCELLED);
@@ -105,27 +106,23 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 SubscriptionActionType.CANCELLED,
                 subscription.getCurrentTier().getTierType().name(),
                 null,
-                SubscriptionActionType.CANCELLED.getDefaultReason()
-        );
-
+                SubscriptionActionType.CANCELLED.getDefaultReason());
     }
 
     @Override
     @Transactional
     public SubscriptionResponse upgradeTier(UUID subscriptionId, TierType newTierType) {
 
-        Subscription subscription =
-                subscriptionRepository.findByIdAndStatus(subscriptionId, SubscriptionStatus.ACTIVE)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException("No active Subscription found.")
-                        );
+        Subscription subscription = subscriptionRepository
+                .findByIdAndStatus(subscriptionId, SubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.ACTIVE_SUBSCRIPTION_NOT_FOUND));
 
         MembershipTier newTier = getActiveMembershipTier(newTierType);
 
         MembershipTier currentTier = subscription.getCurrentTier();
 
         if (newTier.getPriority() <= currentTier.getPriority()) {
-            throw new IllegalStateException("New tier must be higher than current tier");
+            throw new ConflictException(ExceptionMessages.NEW_TIER_MUST_BE_HIGHER);
         }
 
         subscription.setCurrentTier(newTier);
@@ -137,8 +134,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 SubscriptionActionType.UPGRADED,
                 currentTier.getTierType().name(),
                 newTier.getTierType().name(),
-                SubscriptionActionType.UPGRADED.getDefaultReason()
-        );
+                SubscriptionActionType.UPGRADED.getDefaultReason());
 
         return subscriptionMapper.mapToResponse(subscription);
     }
@@ -147,18 +143,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Override
     public SubscriptionResponse downgradeTier(UUID subscriptionId, TierType newTierType) {
 
-        Subscription subscription =
-                subscriptionRepository.findByIdAndStatus(subscriptionId, SubscriptionStatus.ACTIVE)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException("No active Subscription found.")
-                        );
+        Subscription subscription = subscriptionRepository
+                .findByIdAndStatus(subscriptionId, SubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.ACTIVE_SUBSCRIPTION_NOT_FOUND));
 
         MembershipTier newTier = getActiveMembershipTier(newTierType);
 
         MembershipTier currentTier = subscription.getCurrentTier();
 
         if (newTier.getPriority() >= currentTier.getPriority()) {
-            throw new IllegalStateException("New tier must be lower than current tier");
+            throw new ConflictException(ExceptionMessages.NEW_TIER_MUST_BE_LOWER);
         }
 
         subscription.setCurrentTier(newTier);
@@ -170,24 +164,17 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 SubscriptionActionType.DOWNGRADED,
                 currentTier.getTierType().name(),
                 newTier.getTierType().name(),
-                SubscriptionActionType.DOWNGRADED.getDefaultReason()
-        );
+                SubscriptionActionType.DOWNGRADED.getDefaultReason());
 
         return subscriptionMapper.mapToResponse(subscription);
     }
 
-    private User findOrCreateUser(
-            CreateSubscriptionRequest request
-    ) {
+    private User findOrCreateUser(CreateSubscriptionRequest request) {
 
-        return userRepository.findByEmail(
-                request.getEmail()
-        ).orElseGet(() -> createUser(request));
+        return userRepository.findByEmail(request.getEmail()).orElseGet(() -> createUser(request));
     }
 
-    private User createUser(
-            CreateSubscriptionRequest request
-    ) {
+    private User createUser(CreateSubscriptionRequest request) {
 
         User user = new User();
 
@@ -198,61 +185,38 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         return userRepository.save(user);
     }
 
-    private void validateNoActiveSubscription(
-            User user
-    ) {
+    private void validateNoActiveSubscription(User user) {
 
         boolean activeSubscriptionExists =
-                subscriptionRepository.existsByUserIdAndStatus(
-                        user.getId(),
-                        SubscriptionStatus.ACTIVE
-                );
+                subscriptionRepository.existsByUserIdAndStatus(user.getId(), SubscriptionStatus.ACTIVE);
 
         if (activeSubscriptionExists) {
-            throw new IllegalStateException(
-                    "Active subscription already exists"
-            );
+            throw new ConflictException(ExceptionMessages.DUPLICATE_ACTIVE_SUBSCRIPTION);
         }
     }
 
-    private MembershipPlan getActiveMembershipPlan(
-            CreateSubscriptionRequest request
-    ) {
+    private MembershipPlan getActiveMembershipPlan(CreateSubscriptionRequest request) {
 
         return membershipPlanRepository
-                .findByPlanTypeAndActiveTrue(
-                        request.getPlanType()
-                )
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Membership plan not found"
-                ));
+                .findByPlanTypeAndActiveTrue(request.getPlanType())
+                .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.MEMBERSHIP_PLAN_NOT_FOUND));
     }
 
-    private MembershipTier getActiveMembershipTier(
-            TierType tierType
-    ) {
+    private MembershipTier getActiveMembershipTier(TierType tierType) {
 
         return membershipTierRepository
                 .findByTierTypeAndActiveTrue(tierType)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Membership Tier not found"
-                ));
+                .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.MEMBERSHIP_TIER_NOT_FOUND));
     }
 
     private MembershipTier getDefaultTier() {
 
         return membershipTierRepository
                 .findByDefaultTierTrueAndActiveTrue()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Default tier not configured"
-                ));
+                .orElseThrow(() -> new ConfigurationException(ExceptionMessages.DEFAULT_TIER_NOT_CONFIGURED));
     }
 
-    private Subscription buildSubscription(
-            User user,
-            MembershipPlan membershipPlan,
-            MembershipTier membershipTier
-    ) {
+    private Subscription buildSubscription(User user, MembershipPlan membershipPlan, MembershipTier membershipTier) {
 
         Subscription subscription = new Subscription();
 
@@ -264,13 +228,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         LocalDateTime now = LocalDateTime.now();
 
         subscription.setStartDate(now);
-        subscription.setExpiryDate(
-                now.plusDays(
-                        membershipPlan.getValidityDays()
-                )
-        );
+        subscription.setExpiryDate(now.plusDays(membershipPlan.getValidityDays()));
 
         return subscription;
     }
-
 }

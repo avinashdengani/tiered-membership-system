@@ -6,6 +6,9 @@ import com.quickcom.membership.domain.entity.TierRule;
 import com.quickcom.membership.domain.enums.SubscriptionActionType;
 import com.quickcom.membership.domain.enums.SubscriptionStatus;
 import com.quickcom.membership.dto.response.SubscriptionResponse;
+import com.quickcom.membership.exception.ExceptionMessages;
+import com.quickcom.membership.exception.base.ConfigurationException;
+import com.quickcom.membership.exception.base.ResourceNotFoundException;
 import com.quickcom.membership.mapper.SubscriptionMapper;
 import com.quickcom.membership.repository.MembershipTierRepository;
 import com.quickcom.membership.repository.SubscriptionRepository;
@@ -59,7 +62,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
 
         return subscriptionRepository
                 .findByIdAndStatus(subscriptionId, SubscriptionStatus.ACTIVE)
-                .orElseThrow(() -> new IllegalArgumentException("Subscription not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.ACTIVE_SUBSCRIPTION_NOT_FOUND));
     }
 
     private List<TierRule> getActiveTierRules() {
@@ -109,7 +112,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
         return tierRuleEvaluators.stream()
                 .filter(evaluator -> evaluator.getSupportedRuleType() == rule.getRuleType())
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unsupported rule type"));
+                .orElseThrow(() -> new ConfigurationException(ExceptionMessages.UNSUPPORTED_RULE_TYPE));
     }
 
     private void updateSubscriptionTier(
@@ -139,6 +142,6 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
 
         return membershipTierRepository
                 .findByDefaultTierTrueAndActiveTrue()
-                .orElseThrow(() -> new IllegalArgumentException("Default tier not configured"));
+                .orElseThrow(() -> new ConfigurationException(ExceptionMessages.DEFAULT_TIER_NOT_CONFIGURED));
     }
 }
