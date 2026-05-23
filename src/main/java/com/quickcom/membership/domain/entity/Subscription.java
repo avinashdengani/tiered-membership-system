@@ -5,13 +5,14 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "subscriptions")
-public class Subscription extends BaseEntity{
+public class Subscription extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -35,4 +36,10 @@ public class Subscription extends BaseEntity{
     @Column(nullable = false)
     private LocalDateTime expiryDate;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tier_plan_pricing_id")
+    private TierPlanPricing tierPlanPricing;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal amountPaid;
 }
