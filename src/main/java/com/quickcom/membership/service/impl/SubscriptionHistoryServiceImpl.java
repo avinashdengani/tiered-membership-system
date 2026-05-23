@@ -7,6 +7,7 @@ import com.quickcom.membership.repository.SubscriptionHistoryRepository;
 import com.quickcom.membership.service.SubscriptionHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -15,7 +16,13 @@ public class SubscriptionHistoryServiceImpl implements SubscriptionHistoryServic
     private final SubscriptionHistoryRepository subscriptionHistoryRepository;
 
     @Override
-    public void recordTierHistory(Subscription subscription, SubscriptionActionType actionType, String previousTier, String newTier, String reason) {
+    @Transactional
+    public void recordTierHistory(
+            Subscription subscription,
+            SubscriptionActionType actionType,
+            String previousTier,
+            String newTier,
+            String reason) {
         SubscriptionHistory history = new SubscriptionHistory();
 
         history.setSubscription(subscription);
