@@ -124,16 +124,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new ConflictException(ExceptionMessages.NEW_TIER_MUST_BE_HIGHER);
         }
 
-        subscription.setCurrentTier(newTier);
-
-        subscriptionRepository.save(subscription);
-
-        subscriptionHistoryService.recordTierHistory(
-                subscription,
-                SubscriptionActionType.UPGRADED,
-                currentTier.getTierType().name(),
-                newTier.getTierType().name(),
-                SubscriptionActionType.UPGRADED.getDefaultReason());
+        updateSubscriptionTier(subscription, currentTier, newTier, SubscriptionActionType.UPGRADED);
 
         return mapSubscriptionToResponse(subscription);
     }
@@ -154,16 +145,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new ConflictException(ExceptionMessages.NEW_TIER_MUST_BE_LOWER);
         }
 
-        subscription.setCurrentTier(newTier);
-
-        subscriptionRepository.save(subscription);
-
-        subscriptionHistoryService.recordTierHistory(
-                subscription,
-                SubscriptionActionType.DOWNGRADED,
-                currentTier.getTierType().name(),
-                newTier.getTierType().name(),
-                SubscriptionActionType.DOWNGRADED.getDefaultReason());
+        updateSubscriptionTier(subscription, currentTier, newTier, SubscriptionActionType.DOWNGRADED);
 
         return mapSubscriptionToResponse(subscription);
     }
@@ -247,5 +229,27 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         return tierPlanPricingRepository
                 .findByMembershipTierAndMembershipPlanAndActiveTrue(membershipTier, membershipPlan)
                 .orElseThrow(() -> new ConfigurationException(ExceptionMessages.TIER_PLAN_PRICING_NOT_FOUND));
+    }
+
+    private void updateSubscriptionTier(
+            Subscription subscription,
+            MembershipTier currentTier,
+            MembershipTier newTier,
+            SubscriptionActionType subscriptionActionType) {
+
+        TierPlanPricing tierPlanPricing = getTierPlanPricing(newTier, subscription.getMembershipPlan());
+
+        subscription.setCurrentTier(newTier);
+        subscription.setTierPlanPricing(tierPlanPricing);
+        subscription.setAmountPaid(tierPlanPricing.getPrice());
+
+        subscriptionRepository.save(subscription);
+
+        subscriptionHistoryService.recordTierHistory(
+                subscription,
+                subscriptionActionType,
+                currentTier.getTierType().name(),
+                newTier.getTierType().name(),
+                subscriptionActionType.getDefaultReason());
     }
 }
