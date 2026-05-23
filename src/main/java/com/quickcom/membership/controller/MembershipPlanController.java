@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/membership-plans")
+@RequestMapping("/api/v1/subscriptions/plans")
 @RequiredArgsConstructor
 public class MembershipPlanController {
 
