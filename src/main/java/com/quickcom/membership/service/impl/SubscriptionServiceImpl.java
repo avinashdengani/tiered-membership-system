@@ -21,7 +21,7 @@ import com.quickcom.membership.repository.UserRepository;
 import com.quickcom.membership.service.SubscriptionHistoryService;
 import com.quickcom.membership.service.SubscriptionService;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
@@ -75,9 +75,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         Subscription subscription =
                 subscriptionRepository.findById(subscriptionId)
-                    .orElseThrow(() ->
-                            new IllegalArgumentException("Subscription not found.")
-                    );
+                        .orElseThrow(() ->
+                                new IllegalArgumentException("Subscription not found.")
+                        );
 
         return subscriptionMapper.mapToResponse(subscription);
     }
@@ -92,7 +92,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                                 new IllegalArgumentException("Subscription not found.")
                         );
 
-        if(subscription.getStatus() == SubscriptionStatus.CANCELLED) {
+        if (subscription.getStatus() == SubscriptionStatus.CANCELLED) {
             throw new IllegalStateException("Subscription already cancelled.");
         }
 
@@ -123,7 +123,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         MembershipTier currentTier = subscription.getCurrentTier();
 
-        if(newTier.getPriority() <= currentTier.getPriority()) {
+        if (newTier.getPriority() <= currentTier.getPriority()) {
             throw new IllegalStateException("New tier must be higher than current tier");
         }
 
@@ -156,7 +156,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         MembershipTier currentTier = subscription.getCurrentTier();
 
-        if(newTier.getPriority() >= currentTier.getPriority()) {
+        if (newTier.getPriority() >= currentTier.getPriority()) {
             throw new IllegalStateException("New tier must be lower than current tier");
         }
 
@@ -241,10 +241,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private MembershipTier getDefaultTier() {
 
         return membershipTierRepository
-            .findByDefaultTierTrueAndActiveTrue()
-            .orElseThrow(() -> new IllegalArgumentException(
-                    "Default tier not configured"
-            ));
+                .findByDefaultTierTrueAndActiveTrue()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Default tier not configured"
+                ));
     }
 
     private Subscription buildSubscription(

@@ -12,7 +12,7 @@ import com.quickcom.membership.repository.TierRuleRepository;
 import com.quickcom.membership.rule.evaluator.TierRuleEvaluator;
 import com.quickcom.membership.service.SubscriptionHistoryService;
 import com.quickcom.membership.service.TierEvaluationService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -122,7 +122,7 @@ public class TierEvaluationServiceImpl implements TierEvaluationService {
                 )
                 .findFirst()
                 .orElseThrow(() ->
-                    new IllegalArgumentException("Unsupported rule type")
+                        new IllegalArgumentException("Unsupported rule type")
                 );
     }
 
