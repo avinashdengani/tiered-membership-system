@@ -9,8 +9,12 @@ import java.util.UUID;
 public interface SubscriptionService {
 
     SubscriptionResponse createSubscription(CreateSubscriptionRequest createSubscriptionRequest);
+
     SubscriptionResponse getSubscription(UUID subscriptionId);
-    void cancelSubscription(UUID subscriptionId);
+
+    SubscriptionResponse cancelSubscription(UUID subscriptionId);
+
     SubscriptionResponse upgradeTier(UUID subscriptionId, TierType newTierType);
+
     SubscriptionResponse downgradeTier(UUID subscriptionId, TierType newTierType);
 }

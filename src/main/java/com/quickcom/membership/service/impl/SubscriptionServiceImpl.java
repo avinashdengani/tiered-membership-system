@@ -82,7 +82,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    public void cancelSubscription(UUID subscriptionId) {
+    public SubscriptionResponse cancelSubscription(UUID subscriptionId) {
 
         Subscription subscription = subscriptionRepository
                 .findById(subscriptionId)
@@ -106,6 +106,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 subscription.getCurrentTier().getTierType().name(),
                 null,
                 SubscriptionActionType.CANCELLED.getDefaultReason());
+
+        return mapSubscriptionToResponse(subscription);
     }
 
     @Override

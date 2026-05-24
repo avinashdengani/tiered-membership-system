@@ -38,10 +38,9 @@ public class SubscriptionController {
     }
 
     @PutMapping("/{subscriptionId}/cancel")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void cancelSubscription(@PathVariable UUID subscriptionId) {
+    public ResponseEntity<SubscriptionResponse> cancelSubscription(@PathVariable UUID subscriptionId) {
 
-        subscriptionService.cancelSubscription(subscriptionId);
+        return ResponseEntity.ok(subscriptionService.cancelSubscription(subscriptionId));
     }
 
     @PutMapping("/{subscriptionId}/upgrade")
