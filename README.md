@@ -166,19 +166,19 @@ To add a new rule type tomorrow: write one class, annotate `@Component`. Spring 
 
 ## 📡 API Reference
 
-| Method | Endpoint                                               | What it does                                       |
-|--------|--------------------------------------------------------|----------------------------------------------------|
-| `GET`  | `/api/v1/subscriptions/plans`                          | List all active membership plans                   |
-| `GET`  | `/api/v1/subscriptions/tiers`                          | List all tiers with their benefits                 |
-| `GET`  | `/api/v1/subscriptions/pricing`                        | Full pricing matrix (all tier × plan combos)       |
-| `POST` | `/api/v1/subscriptions`                                | Create subscription (userId + planType + tierType) |
-| `GET`  | `/api/v1/subscriptions/{subscriptionId}`               | Get subscription details + current benefits        |
-| `GET`  | `/api/v1/users/{userId}/subscription`                  | Get active subscription by user (lazy expiry)      |
-| `PUT`  | `/api/v1/subscriptions/{subscriptionId}/upgrade`       | Manual tier upgrade (`?newTierType=GOLD`)          |
-| `PUT`  | `/api/v1/subscriptions/{subscriptionId}/downgrade`     | Manual tier downgrade (`?newTierType=SILVER`)      |
-| `PUT`  | `/api/v1/subscriptions/{subscriptionId}/cancel`        | Cancel active subscription                         |
-| `GET`  | `/api/v1/subscriptions/{subscriptionId}/history`       | Full audit trail of all state changes              |
-| `POST` | `/api/v1/subscriptions/{subscriptionId}/evaluate-tier` | Trigger rule-based tier evaluation                 |
+| Method | Endpoint                                               | What it does                                        |
+|--------|--------------------------------------------------------|-----------------------------------------------------|
+| `GET`  | `/api/v1/subscriptions/plans`                          | List all active membership plans                    |
+| `GET`  | `/api/v1/subscriptions/tiers`                          | List all tiers with their benefits                  |
+| `GET`  | `/api/v1/subscriptions/pricing`                        | Full pricing matrix (all tier × plan combos)        |
+| `POST` | `/api/v1/subscriptions`                                | Create subscription (userId + planType + tierType)  |
+| `GET`  | `/api/v1/subscriptions/{subscriptionId}`               | Get subscription details + current benefits         |
+| `GET`  | `/api/v1/users/{userId}/subscription`                  | Get active subscription by user (lazy expiry check) |
+| `PUT`  | `/api/v1/subscriptions/{subscriptionId}/upgrade`       | Manual tier upgrade (`?newTierType=GOLD`)           |
+| `PUT`  | `/api/v1/subscriptions/{subscriptionId}/downgrade`     | Manual tier downgrade (`?newTierType=SILVER`)       |
+| `PUT`  | `/api/v1/subscriptions/{subscriptionId}/cancel`        | Cancel active subscription                          |
+| `GET`  | `/api/v1/subscriptions/{subscriptionId}/history`       | Full audit trail of all state changes               |
+| `POST` | `/api/v1/subscriptions/{subscriptionId}/evaluate-tier` | Trigger rule-based tier evaluation                  |
 
 ---
 
@@ -216,6 +216,23 @@ Pre-seeded across 12 Flyway migrations: **8 users** (with deliberate cohort assi
 them, **3 plans**, **3 tiers**, **5 tier rules**, **3 benefits**, **6 tier-benefit mappings**, **9 pricing rows** (3
 tiers × 3 plans), **7 subscriptions** (6 active + 1 cancelled), and **12 subscription history entries** capturing full
 lifecycle stories. Start calling APIs immediately.
+
+---
+
+## ⏱️ Expiry Handling
+
+Subscription expiry is resolved **lazily on read** — no background process required to keep state correct.
+
+Both fetch endpoints check expiry at call time:
+
+- `GET /api/v1/subscriptions/{subscriptionId}` — checks and marks expired before returning
+- `GET /api/v1/users/{userId}/subscription` — same lazy check on every call
+
+If a subscription is past its `expiryDate`, it is marked `EXPIRED`, saved, and recorded in `subscription_history` — all
+within the same transaction. The caller always gets the true current state, not a stale one.
+
+This is a deliberate tradeoff: simple, zero-infrastructure, and correct for the current scale. The natural evolution is
+a scheduler that proactively sweeps expired subscriptions in bulk (see Future Scope).
 
 ---
 
