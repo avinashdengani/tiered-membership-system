@@ -2,7 +2,9 @@ package com.quickcom.membership.controller;
 
 import com.quickcom.membership.domain.enums.TierType;
 import com.quickcom.membership.dto.request.CreateSubscriptionRequest;
+import com.quickcom.membership.dto.response.SubscriptionHistoryResponse;
 import com.quickcom.membership.dto.response.SubscriptionResponse;
+import com.quickcom.membership.service.SubscriptionHistoryService;
 import com.quickcom.membership.service.SubscriptionService;
 import com.quickcom.membership.service.TierEvaluationService;
 import jakarta.validation.Valid;
@@ -11,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -20,6 +23,7 @@ public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
     private final TierEvaluationService tierEvaluationService;
+    private final SubscriptionHistoryService subscriptionHistoryService;
 
     @PostMapping
     public ResponseEntity<SubscriptionResponse> createSubscription(
@@ -53,6 +57,11 @@ public class SubscriptionController {
     public ResponseEntity<SubscriptionResponse> downgradeTier(
             @PathVariable UUID subscriptionId, @RequestParam TierType newTierType) {
         return ResponseEntity.ok(subscriptionService.downgradeTier(subscriptionId, newTierType));
+    }
+
+    @GetMapping("/{subscriptionId}/history")
+    public ResponseEntity<List<SubscriptionHistoryResponse>> getSubscriptionHistory(@PathVariable UUID subscriptionId) {
+        return ResponseEntity.ok(subscriptionHistoryService.getHistory(subscriptionId));
     }
 
     @PostMapping("/{subscriptionId}/evaluate-tier")

@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface SubscriptionHistoryRepository extends JpaRepository<SubscriptionHistory, UUID> {
 
     List<SubscriptionHistory> findBySubscriptionOrderByCreatedAtDesc(Subscription subscription);
+
+    List<SubscriptionHistory> findTop5BySubscriptionOrderByCreatedAtDesc(Subscription subscription);
 }
