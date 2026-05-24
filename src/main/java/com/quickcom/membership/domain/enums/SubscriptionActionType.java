@@ -4,8 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum SubscriptionActionType {
-
     SUBSCRIBED("Initial tier assignment"),
+
+    RESUBSCRIBED("Subscription react    ivated"),
 
     UPGRADED("Tier upgraded after evaluation"),
 
@@ -22,5 +23,4 @@ public enum SubscriptionActionType {
     SubscriptionActionType(String defaultReason) {
         this.defaultReason = defaultReason;
     }
-
 }
