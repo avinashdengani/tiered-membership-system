@@ -46,18 +46,12 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         MembershipPlan membershipPlan = getActiveMembershipPlan(request.getPlanType());
         MembershipTier membershipTier = getActiveMembershipTier(request.getTierType());
-        TierPlanPricing tierPlanPricing = getTierPlanPricing(membershipTier, membershipPlan);
+        TierPlanPricing tierPlanPricing = getActiveTierPlanPricing(membershipTier, membershipPlan);
 
-        Subscription subscription = buildSubscription(user, membershipPlan, membershipTier, tierPlanPricing);
-
-        subscriptionRepository.save(subscription);
-
-        subscriptionHistoryService.recordTierHistory(
-                subscription,
-                SubscriptionActionType.SUBSCRIBED,
-                null,
-                membershipTier.getTierType().name(),
-                SubscriptionActionType.SUBSCRIBED.getDefaultReason());
+        Subscription subscription = subscriptionRepository
+                .findByUserId(user.getId())
+                .map(existing -> handleExistingSubscription(existing, membershipPlan, membershipTier, tierPlanPricing))
+                .orElseGet(() -> handleFreshSubscription(user, membershipPlan, membershipTier, tierPlanPricing));
 
         return mapSubscriptionToResponse(subscription);
     }
@@ -74,7 +68,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public SubscriptionResponse getSubscriptionByUserId(UUID userId) {
 
         userRepository
@@ -86,9 +80,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.ACTIVE_SUBSCRIPTION_NOT_FOUND));
 
         resolveExpiry(subscription);
-
-        List<TierBenefit> tierBenefits =
-                tierBenefitRepository.findAllByTierAndBenefitActiveTrue(subscription.getCurrentTier());
 
         return mapSubscriptionToResponse(subscription);
     }
@@ -163,6 +154,125 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         return mapSubscriptionToResponse(subscription);
     }
 
+    private Subscription handleExistingSubscription(
+            Subscription existing,
+            MembershipPlan membershipPlan,
+            MembershipTier membershipTier,
+            TierPlanPricing tierPlanPricing) {
+
+        SubscriptionActionType actionType = resolveResubscribeActionType(existing.getStatus());
+
+        reactivateSubscription(existing, membershipPlan, membershipTier, tierPlanPricing);
+
+        subscriptionRepository.save(existing);
+
+        subscriptionHistoryService.recordTierHistory(
+                existing, actionType, null, membershipTier.getTierType().name(), actionType.getDefaultReason());
+
+        return existing;
+    }
+
+    private Subscription handleFreshSubscription(
+            User user, MembershipPlan membershipPlan, MembershipTier membershipTier, TierPlanPricing tierPlanPricing) {
+
+        Subscription fresh = buildSubscription(user, membershipPlan, membershipTier, tierPlanPricing);
+
+        subscriptionRepository.save(fresh);
+
+        subscriptionHistoryService.recordTierHistory(
+                fresh,
+                SubscriptionActionType.SUBSCRIBED,
+                null,
+                membershipTier.getTierType().name(),
+                SubscriptionActionType.SUBSCRIBED.getDefaultReason());
+
+        return fresh;
+    }
+
+    private SubscriptionActionType resolveResubscribeActionType(SubscriptionStatus previousStatus) {
+        return switch (previousStatus) {
+            case CANCELLED -> SubscriptionActionType.RESUBSCRIBED;
+            case EXPIRED -> SubscriptionActionType.RENEWED;
+            default -> throw new ConflictException(ExceptionMessages.DUPLICATE_ACTIVE_SUBSCRIPTION);
+        };
+    }
+
+    private Subscription buildSubscription(
+            User user, MembershipPlan membershipPlan, MembershipTier membershipTier, TierPlanPricing tierPlanPricing) {
+
+        Subscription subscription = new Subscription();
+        subscription.setUser(user);
+
+        applySubscriptionDetails(subscription, membershipPlan, membershipTier, tierPlanPricing);
+
+        return subscription;
+    }
+
+    private void reactivateSubscription(
+            Subscription existing,
+            MembershipPlan membershipPlan,
+            MembershipTier membershipTier,
+            TierPlanPricing tierPlanPricing) {
+
+        applySubscriptionDetails(existing, membershipPlan, membershipTier, tierPlanPricing);
+    }
+
+    private void applySubscriptionDetails(
+            Subscription subscription,
+            MembershipPlan membershipPlan,
+            MembershipTier membershipTier,
+            TierPlanPricing tierPlanPricing) {
+
+        subscription.setMembershipPlan(membershipPlan);
+        subscription.setCurrentTier(membershipTier);
+        subscription.setTierPlanPricing(tierPlanPricing);
+        subscription.setAmountPaid(tierPlanPricing.getPrice());
+        subscription.setStatus(SubscriptionStatus.ACTIVE);
+
+        LocalDateTime now = LocalDateTime.now();
+        subscription.setStartDate(now);
+        subscription.setExpiryDate(now.plusDays(membershipPlan.getValidityDays()));
+    }
+
+    private void updateSubscriptionTier(
+            Subscription subscription,
+            MembershipTier currentTier,
+            MembershipTier newTier,
+            SubscriptionActionType actionType) {
+
+        TierPlanPricing tierPlanPricing = getActiveTierPlanPricing(newTier, subscription.getMembershipPlan());
+
+        subscription.setCurrentTier(newTier);
+        subscription.setTierPlanPricing(tierPlanPricing);
+        subscription.setAmountPaid(tierPlanPricing.getPrice());
+
+        subscriptionRepository.save(subscription);
+
+        subscriptionHistoryService.recordTierHistory(
+                subscription,
+                actionType,
+                currentTier.getTierType().name(),
+                newTier.getTierType().name(),
+                actionType.getDefaultReason());
+    }
+
+    private void resolveExpiry(Subscription subscription) {
+        if (subscription.getStatus() == SubscriptionStatus.ACTIVE
+                && LocalDateTime.now().isAfter(subscription.getExpiryDate())) {
+
+            subscription.setStatus(SubscriptionStatus.EXPIRED);
+
+            subscriptionRepository.save(subscription);
+
+            subscriptionHistoryService.recordTierHistory(
+                    subscription,
+                    SubscriptionActionType.EXPIRED,
+                    subscription.getCurrentTier().getTierType().name(),
+                    null,
+                    SubscriptionActionType.EXPIRED.getDefaultReason());
+        }
+    }
+
     private User findUserById(UUID userId) {
         return userRepository
                 .findById(userId)
@@ -189,72 +299,15 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.MEMBERSHIP_TIER_NOT_FOUND));
     }
 
-    private TierPlanPricing getTierPlanPricing(MembershipTier membershipTier, MembershipPlan membershipPlan) {
+    private TierPlanPricing getActiveTierPlanPricing(MembershipTier membershipTier, MembershipPlan membershipPlan) {
         return tierPlanPricingRepository
                 .findByMembershipTierAndMembershipPlanAndActiveTrue(membershipTier, membershipPlan)
                 .orElseThrow(() -> new ConfigurationException(ExceptionMessages.TIER_PLAN_PRICING_NOT_FOUND));
-    }
-
-    private Subscription buildSubscription(
-            User user, MembershipPlan membershipPlan, MembershipTier membershipTier, TierPlanPricing tierPlanPricing) {
-
-        Subscription subscription = new Subscription();
-
-        subscription.setUser(user);
-        subscription.setMembershipPlan(membershipPlan);
-        subscription.setCurrentTier(membershipTier);
-        subscription.setTierPlanPricing(tierPlanPricing);
-        subscription.setAmountPaid(tierPlanPricing.getPrice());
-        subscription.setStatus(SubscriptionStatus.ACTIVE);
-
-        LocalDateTime now = LocalDateTime.now();
-        subscription.setStartDate(now);
-        subscription.setExpiryDate(now.plusDays(membershipPlan.getValidityDays()));
-
-        return subscription;
-    }
-
-    private void updateSubscriptionTier(
-            Subscription subscription,
-            MembershipTier currentTier,
-            MembershipTier newTier,
-            SubscriptionActionType actionType) {
-
-        TierPlanPricing tierPlanPricing = getTierPlanPricing(newTier, subscription.getMembershipPlan());
-
-        subscription.setCurrentTier(newTier);
-        subscription.setTierPlanPricing(tierPlanPricing);
-        subscription.setAmountPaid(tierPlanPricing.getPrice());
-
-        subscriptionRepository.save(subscription);
-
-        subscriptionHistoryService.recordTierHistory(
-                subscription,
-                actionType,
-                currentTier.getTierType().name(),
-                newTier.getTierType().name(),
-                actionType.getDefaultReason());
     }
 
     private SubscriptionResponse mapSubscriptionToResponse(Subscription subscription) {
         List<TierBenefit> tierBenefits =
                 tierBenefitRepository.findAllByTierAndBenefitActiveTrue(subscription.getCurrentTier());
         return subscriptionMapper.mapToResponse(subscription, tierBenefits);
-    }
-
-    private void resolveExpiry(Subscription subscription) {
-        if (subscription.getStatus() == SubscriptionStatus.ACTIVE
-                && LocalDateTime.now().isAfter(subscription.getExpiryDate())) {
-
-            subscription.setStatus(SubscriptionStatus.EXPIRED);
-            subscriptionRepository.save(subscription);
-
-            subscriptionHistoryService.recordTierHistory(
-                    subscription,
-                    SubscriptionActionType.EXPIRED,
-                    subscription.getCurrentTier().getTierType().name(),
-                    null,
-                    SubscriptionActionType.EXPIRED.getDefaultReason());
-        }
     }
 }
