@@ -13,6 +13,7 @@ import java.util.UUID;
 public class SubscriptionResponse {
 
     private UUID subscriptionId;
+    private UUID userId;
     private String userEmail;
     private SubscriptionStatus status;
     private LocalDateTime startDate;

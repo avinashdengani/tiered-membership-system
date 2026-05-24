@@ -25,5 +25,7 @@ public final class ExceptionMessages {
 
     public static final String TIER_PLAN_PRICING_NOT_FOUND = "Selected tier and plan is not available.";
 
+    public static final String USER_NOT_FOUND = "User not found";
+
     private ExceptionMessages() {}
 }

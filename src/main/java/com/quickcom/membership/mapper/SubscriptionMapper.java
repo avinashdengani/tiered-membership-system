@@ -2,9 +2,7 @@ package com.quickcom.membership.mapper;
 
 import com.quickcom.membership.domain.entity.Subscription;
 import com.quickcom.membership.domain.entity.TierBenefit;
-
 import com.quickcom.membership.dto.response.SubscriptionResponse;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +20,7 @@ public class SubscriptionMapper {
         SubscriptionResponse response = new SubscriptionResponse();
 
         response.setSubscriptionId(subscription.getId());
+        response.setUserId(subscription.getUser().getId());
         response.setUserEmail(subscription.getUser().getEmail());
         response.setStatus(subscription.getStatus());
         response.setStartDate(subscription.getStartDate());
