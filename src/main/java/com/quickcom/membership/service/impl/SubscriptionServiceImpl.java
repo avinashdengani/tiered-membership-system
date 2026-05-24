@@ -57,12 +57,14 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public SubscriptionResponse getSubscription(UUID subscriptionId) {
 
         Subscription subscription = subscriptionRepository
                 .findById(subscriptionId)
                 .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.SUBSCRIPTION_NOT_FOUND));
+
+        resolveExpiry(subscription);
 
         return mapSubscriptionToResponse(subscription);
     }
