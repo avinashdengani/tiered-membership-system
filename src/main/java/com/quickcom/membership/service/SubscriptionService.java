@@ -12,6 +12,8 @@ public interface SubscriptionService {
 
     SubscriptionResponse getSubscription(UUID subscriptionId);
 
+    SubscriptionResponse getSubscriptionByUserId(UUID userId);
+
     SubscriptionResponse cancelSubscription(UUID subscriptionId);
 
     SubscriptionResponse upgradeTier(UUID subscriptionId, TierType newTierType);

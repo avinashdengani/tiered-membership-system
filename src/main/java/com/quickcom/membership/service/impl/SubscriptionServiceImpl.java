@@ -74,6 +74,26 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public SubscriptionResponse getSubscriptionByUserId(UUID userId) {
+
+        userRepository
+                .findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.USER_NOT_FOUND));
+
+        Subscription subscription = subscriptionRepository
+                .findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException(ExceptionMessages.ACTIVE_SUBSCRIPTION_NOT_FOUND));
+
+        resolveExpiry(subscription);
+
+        List<TierBenefit> tierBenefits =
+                tierBenefitRepository.findAllByTierAndBenefitActiveTrue(subscription.getCurrentTier());
+
+        return mapSubscriptionToResponse(subscription);
+    }
+
+    @Override
     @Transactional
     public SubscriptionResponse cancelSubscription(UUID subscriptionId) {
 
@@ -220,5 +240,21 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         List<TierBenefit> tierBenefits =
                 tierBenefitRepository.findAllByTierAndBenefitActiveTrue(subscription.getCurrentTier());
         return subscriptionMapper.mapToResponse(subscription, tierBenefits);
+    }
+
+    private void resolveExpiry(Subscription subscription) {
+        if (subscription.getStatus() == SubscriptionStatus.ACTIVE
+                && LocalDateTime.now().isAfter(subscription.getExpiryDate())) {
+
+            subscription.setStatus(SubscriptionStatus.EXPIRED);
+            subscriptionRepository.save(subscription);
+
+            subscriptionHistoryService.recordTierHistory(
+                    subscription,
+                    SubscriptionActionType.EXPIRED,
+                    subscription.getCurrentTier().getTierType().name(),
+                    null,
+                    SubscriptionActionType.EXPIRED.getDefaultReason());
+        }
     }
 }
